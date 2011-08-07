@@ -1,0 +1,23 @@
+project:
+  name: "%(project_name)s"
+roles:
+    - name: 'dev'
+      server: 'dev'
+      hosts: ['localhost']
+      virtualenv: '~/.virtual-envs/'
+    - name: 'prod'
+      virtualenv: '/var/www/virtual-envs/'
+      path: '/var/www/vhosts/yourproject.com/'
+      user: 'www-data'
+      server: 'apache'
+      servername: 'yourproject.com'
+      serveradmin: 'admin@yourproject.com'
+      hosts: ['user@prod-server.com']
+    - name: 'demo'
+      virtualenv: '/var/www/virtual-envs/'
+      path: '/var/www/vhosts/demo.yourproject.com/'
+      user: 'www-data'
+      server: 'apache'
+      servername: 'demo.yourproject.com'
+      serveradmin: 'admin@yourproject.com'
+      hosts: ['user@demo-server.com:2011']
