@@ -43,7 +43,7 @@ def main():
 
     try:
         if options.setup:
-            name = len(args) and args[0] or False
+            name = len(args) and args[0].replace('/', '') or False
             project = Project(name)
             project.setupdev()
 
