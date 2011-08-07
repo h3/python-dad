@@ -76,12 +76,12 @@ would you like to use this one ? Otherwise it will be deleted and recreated.", T
         env.user = stage['user']
     env.hosts = stage['hosts']
 
-
 def setupdev(project_name):
 #   if not self.project_name:
 #       sys.stderr.write("Error: please provide a project name.\n")
 #       sys.exit(0)
 
+    _setup_env()
     print "Setuping %s" % project_name
 
     # Copy templates
@@ -103,9 +103,12 @@ def setupdev(project_name):
         _template(os.path.join(env.tpl_path, 'project.yml'), os.path.join(env.dadconf_path, 'project.yml'), {
             'project_name': project_name,
         })
-
-    print "Done."
-
+    
+    for stage in ['dev', 'demo', 'prod']:
+        dest = os.path.join(env.project_path, 'settings_%s.py' % stage)
+        src  = _get_template_path('settings_%s.py' % stage)
+        if not os.path.exists(dest):
+            _template(src, dest, { 'project_name': project_name })
 
 def deploy():
     """ 
@@ -271,8 +274,12 @@ def _setup_env():
         if env.host_string in env.roledefs[roledef]:
             env.role = roledef
 
+    if not hasattr(env, 'role'):
+        env.role  = 'dev'
+
     env.stage           = _get_stage_conf(env.role)
     env.project_name    = _get_project_name()
+    env.project_path    = os.path.join(env.base_path, env.project_name)
     env.venv_name       = '%s-env' % env.project_name
     env.venv_root       = os.path.join(os.path.expanduser(env.stage['virtualenv']), 'py/')
     env.venv_path       = os.path.join(env.venv_root, env.venv_name)
@@ -409,6 +416,10 @@ def _template(src, dest, variables):
     fd.write(buff % variables)
     fd.close()
     fs.close()
+
+
+def _get_template_path(path):
+    return os.path.join(env.tpl_path, path)
 
 # Future fabric version ..
 #from fabric.operations import open_shell
