@@ -1,0 +1,20 @@
+name: 'Redhat'
+versions:
+    - version: '8'
+      codename: 'Werewolf'
+      discover: ['cat /etc/redhat-release', '^Fedora release 8 (Werewolf)$']
+      server:
+
+          # Apache2 + mod WSGI + Plesk
+          - type: 'apache2+plesk+wsgi'
+            chmod: '%(parent)s'
+            graceful: '/etc/init.d/httpd graceful'
+            vhosts: 'cp %(vhost_file)s /var/www/vhosts/motion-m.ca/conf/vhost.conf'
+            error_logs: '/var/log/apache2/%(server_name)-error_log'
+            access_logs: '/var/log/apache2/%(server_name)-access_log'
+            discover: [
+                ['apache2 -v', '^Server version: Apache/.*'],
+                ['apache2ctl -t -D DUMP_MODULES | grep wsgi', 'wsgi_module'],
+                ['du /usr/local/psa/admin/sbin/websrvmng', '\d+\t\/usr\/local\/psa\/admin\/sbin\/websrvmng'],
+            ]
+
