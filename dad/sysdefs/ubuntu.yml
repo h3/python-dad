@@ -6,7 +6,7 @@ versions:
       server:
 
           # Apache2 + mod WSGI
-          - type: 'apache2+wsgi'
+          - type: 'apache2+mod_wsgi'
             chmod: 'www-data'
             graceful: '/etc/init.d/apache2 graceful'
             vhosts: 'cp %(vhost_file)s /etc/apache2/sites-enabled/%(site_name)s'
@@ -17,13 +17,14 @@ versions:
                 ['apache2ctl -t -D DUMP_MODULES | grep wsgi', 'wsgi_module'],
             ]
 
-          - type: 'apache2'
-            chmod: 'www-data'
-            graceful: '/etc/init.d/apache2 graceful'
-            vhosts: 'cp %(vhost_file)s /etc/apache2/sites-enabled/'
-            error_logs: '/var/log/apache2/%(server_name)-error_log'
-            access_logs: '/var/log/apache2/%(server_name)-access_log'
-            discover: [
-                ['apache2 -v', '^Server version: Apache/.*'],
-            ]
+          # Apache2 + Mod Python
+         #- type: 'apache2+mod_python'
+         #  chmod: 'www-data'
+         #  graceful: '/etc/init.d/apache2 graceful'
+         #  vhosts: 'cp %(vhost_file)s /etc/apache2/sites-enabled/'
+         #  error_logs: '/var/log/apache2/%(server_name)-error_log'
+         #  access_logs: '/var/log/apache2/%(server_name)-access_log'
+         #  discover: [
+         #      ['apache2 -v', '^Server version: Apache/.*'],
+         #  ]
 
