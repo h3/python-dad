@@ -9,7 +9,7 @@ roles:
       virtualenv: '/var/www/virtual-envs/'
       path: '/var/www/vhosts/yourproject.com/'
       user: 'www-data'
-      server: 'apache'
+      sysdef: ['ubuntu', '11.04', 'apache2+mod_wsgi']
       servername: 'yourproject.com'
       serveradmin: 'admin@yourproject.com'
       hosts: ['user@prod-server.com']
@@ -17,7 +17,7 @@ roles:
       virtualenv: '/var/www/virtual-envs/'
       path: '/var/www/vhosts/demo.yourproject.com/'
       user: 'www-data'
-      server: 'apache'
+      sysdef: ['ubuntu', '11.04', 'apache2+mod_wsgi']
       servername: 'demo.yourproject.com'
       serveradmin: 'admin@yourproject.com'
       hosts: ['user@demo-server.com:2011']

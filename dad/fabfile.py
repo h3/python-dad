@@ -292,12 +292,13 @@ def _setup_env():
     if not env.project_name:
         abort("Cannot determine project name.. does dad/project.yml exists ?")
 
-    if 'sysdef' in env.stage:
-        osname, version, t = env.stage['sysdef']
-        env.sysdef = get_sysdef(osname, version, t)
-    else:
-        # TODO: NOT FUNCTIONAL YET !
-        env.sysdef = discover_system(True)   
+    if env.role != 'dev':
+        if 'sysdef' in env.stage:
+            osname, version, t = env.stage['sysdef']
+            env.sysdef = get_sysdef(osname, version, t)
+        else:
+            # TODO: NOT FUNCTIONAL YET !
+            env.sysdef = discover_system(True)   
 
 
 def _apache_graceful():
