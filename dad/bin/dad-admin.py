@@ -35,6 +35,7 @@ parser.add_option('-d', '--dev',        dest='dev', action='store_true')
 parser.add_option('-f', '--freeze',     dest='freeze', action='store_true')
 parser.add_option('-s', '--setup',      dest='setup', action='store_true')
 parser.add_option('-p', '--push',       dest='push', action='store_true')
+parser.add_option('-t', '--create-local-templates', dest='create_local_templates', action='store_true')
 parser.add_option('-u', '--update',     dest='update', action='store_true')
 #parser.add_option('-K', '--ssh-keyless-auth', dest='ssh_keyless_auth', action='store_true')
 #parser.add_option('-m', '--move-data',  dest='move_data', action='store_true')
@@ -52,6 +53,10 @@ def main():
         if options.dev:
             project = Project()
             project.dev()
+
+        if options.create_local_templates:
+            project = Project()
+            project.create_local_templates()
         
         if options.freeze:
             project = Project()

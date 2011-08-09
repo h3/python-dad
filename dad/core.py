@@ -5,6 +5,8 @@ import os, sys
 
 from dad.utils import get_config, get_stage, yes_no_prompt
 
+from fabric.contrib import console
+
 DEBUG = True
 
 class Project():
@@ -95,6 +97,17 @@ class Project():
             sys.exit(0)
 
         self._fab('setupdev:%s' % self.project_name)
+
+    
+    def create_local_templates(self):
+        """ 
+        create local templates which override default templates
+        """
+        tpl_path = os.path.join(os.path.dirname(__file__), 'templates/')
+        if not os.path.exists(os.path.expanduser('~/.python-dad/templates/')) or console.confirm("Local template already exists, do you want to overrite ?", False):
+            os.system('cp -rf %s ~/.python-dad/' % tpl_path)
+
+
 
 
     def dev(self):

@@ -114,18 +114,18 @@ def setupdev(project_name):
         warn("Warning: apache config directory already exists, skipping.\n")
     else:
         local('mkdir %s' % env.apacheconf_path)
-        local('cp %s %s' % (os.path.join(env.tpl_path, 'apache/example.conf'), env.apacheconf_path))
-        local('cp %s %s' % (os.path.join(env.tpl_path, 'apache/prod.conf'), env.apacheconf_path))
-        local('cp %s %s' % (os.path.join(env.tpl_path, 'apache/demo.conf'), env.apacheconf_path))
-        local('cp %s %s' % (os.path.join(env.tpl_path, 'apache/demo.wsgi'), env.apacheconf_path))
-        local('cp %s %s' % (os.path.join(env.tpl_path, 'apache/prod.wsgi'), env.apacheconf_path))
+        local('cp %s %s' % (_get_template('apache/example.conf'), env.apacheconf_path))
+        local('cp %s %s' % (_get_template('apache/prod.conf'), env.apacheconf_path))
+        local('cp %s %s' % (_get_template('apache/demo.conf'), env.apacheconf_path))
+        local('cp %s %s' % (_get_template('apache/demo.wsgi'), env.apacheconf_path))
+        local('cp %s %s' % (_get_template('apache/prod.wsgi'), env.apacheconf_path))
 
     if os.path.exists(env.dadconf_path):
         warn("Warning: dad config directory already exists, skipping.\n")
     else:
         local('mkdir %s' % env.dadconf_path)
-        local('cp %s %s' % (os.path.join(env.tpl_path, 'requirements.txt'), env.dadconf_path))
-        _template(os.path.join(env.tpl_path, 'project.yml'), os.path.join(env.dadconf_path, 'project.yml'), {
+        local('cp %s %s' % (_get_template('requirements.txt'), env.dadconf_path))
+        _template(_get_template('project.yml'), os.path.join(env.dadconf_path, 'project.yml'), {
             'project_name': project_name,
         })
     
@@ -346,6 +346,14 @@ def _setup_env():
     else:
         env.venv_distribute = '--distribute'
 
+def _get_template(tpl):
+    local_path = os.path.join(os.path.expanduser('~/.python-dad/templates/'), tpl)
+    global_path = os.path.join(env.tpl_path, tpl)
+    if os.path.exists(local_path):
+        return local_path
+    else:
+        return global_path
+
 def _apache_graceful():
     """ 
     Perform a Apache graceful restart 
@@ -445,7 +453,7 @@ def _create_dev_bootstrap(env_path, env_name):
     Create the bootstrap bash script that wraps
     virtualenv activate
     """
-    _template(os.path.join(env.tpl_path, 'dev.sh'), os.path.join(env.dadconf_path, 'dev.sh'), {
+    _template(_get_template('dev.sh'), os.path.join(env.dadconf_path, 'dev.sh'), {
         'env_path': env.venv_path,
         'activate_path': env.venv_activate,
         'project_name': env.project_name,
