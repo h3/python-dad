@@ -98,16 +98,16 @@ would you like to use this one ? Otherwise it will be deleted and recreated.", T
                 local("rm -rf %s" % os.path.join(env.venv_path, env.venv_name))
                 setup_virtualenv()
 
-    # Not sure if needed anymore
-    stage = _get_stage_conf(env.role)
-    if 'user' in stage:
-        env.user = stage['user']
-    env.hosts = stage['hosts']
+#   # Not sure if needed anymore
+#   stage = _get_stage_conf(env.role)
+#   if 'user' in stage:
+#       env.user = stage['user']
+#   env.hosts = stage['hosts']
 
 
 def setupdev(project_name):
-    _setup_env()
     print "Setuping %s" % project_name
+    env.project_name = project_name
 
     # Copy templates
     if os.path.exists(env.apacheconf_path):
@@ -130,7 +130,7 @@ def setupdev(project_name):
         })
     
     for stage in ['dev', 'demo', 'prod']:
-        dest = os.path.join(env.project_path, 'settings_%s.py' % stage)
+        dest = os.path.join(os.path.join(env.base_path, project_name), 'settings_%s.py' % stage)
         src  = _get_template_path('settings_%s.py' % stage)
         if not os.path.exists(dest):
             _template(src, dest, { 'project_name': project_name })
