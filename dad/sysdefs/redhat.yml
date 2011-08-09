@@ -1,9 +1,10 @@
-name: 'Redhat'
+name: 'Fedora'
+discover: ['cat /etc/redhat-release', '*Fedora*']
 versions:
     - version: '8'
       codename: 'Werewolf'
       discover: ['cat /etc/redhat-release', '^Fedora release 8 (Werewolf)$']
-      server:
+      servers:
 
           # Apache2 + mod WSGI + Plesk
           - type: 'apache2+plesk+wsgi'

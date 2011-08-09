@@ -9,6 +9,7 @@ from fabric.network import interpret_host_string
 from fabric.operations import put
 
 from dad.utils import get_config, yes_no_prompt
+from dad.sysdef import get_sysdef_paths, load_sysdef, get_sysdef_list, get_sysdef
 
 RSYNC_EXCLUDE = (
     '.DS_Store',
@@ -76,11 +77,8 @@ would you like to use this one ? Otherwise it will be deleted and recreated.", T
         env.user = stage['user']
     env.hosts = stage['hosts']
 
-def setupdev(project_name):
-#   if not self.project_name:
-#       sys.stderr.write("Error: please provide a project name.\n")
-#       sys.exit(0)
 
+def setupdev(project_name):
     _setup_env()
     print "Setuping %s" % project_name
 
@@ -294,15 +292,20 @@ def _setup_env():
     if not env.project_name:
         abort("Cannot determine project name.. does dad/project.yml exists ?")
 
+    if 'sysdef' in env.stage:
+        osname, version, t = env.stage['sysdef']
+        env.sysdef = get_sysdef(osname, version, t)
+    else:
+        # TODO: NOT FUNCTIONAL YET !
+        env.sysdef = discover_system(True)   
+
 
 def _apache_graceful():
     """ 
     Perform a Apache graceful restart 
     """
-    if files.exists('/etc/init.d/apache2'): # Ubuntu
-        sudo("/etc/init.d/apache2 graceful")
-    elif files.exists('/etc/init.d/httpd'): # Red Hat
-        sudo("/etc/init.d/httpd graceful")
+    _setup_env()
+    sudo(env.sysdef['graceful'])
     
 
 def _get_project_name():
@@ -354,11 +357,9 @@ def _apache_configure():
     src = os.path.join(env.stage['path'], 'apache/%(role)s.conf' % env)
 
     if files.exists(src):
-        if files.exists('/etc/apache2/sites-enabled/'):
-            dest_path = "/etc/apache2/sites-enabled/%s" % servername
-        if files.exists('/var/log/apache2/'):
-            error_log_path = os.path.join("/var/log/apache2/", '%s-error_log' % servername)
-            access_log_path = os.path.join("/var/log/apache2/", '%s-access_log' % servername)
+        dest_path = env.sysdef['vhosts'] % {'servername': servername}
+        error_log_path = env.sysdef['error_logs'] % {'servername': servername}
+        access_log_path = env.sysdef['access_logs'] % {'servername': servername}
 
         if 'user' in env.stage:
             user = env.stage['user']
@@ -420,6 +421,60 @@ def _template(src, dest, variables):
 
 def _get_template_path(path):
     return os.path.join(env.tpl_path, path)
+
+
+import commands, re
+
+def _tests_match(tests):
+    if len(tests) > 2:
+        for test in tests:
+            rs = _test_version(test)
+            if rs: 
+                return rs
+    else:
+        _setup_env()
+        if env.role == 'dev':
+            print tests[0]
+            output = commands.getoutput(tests[0])
+        else:
+            output = run(tests[0])
+        rs = re.match(re.compile(tests[1]), output)
+        if rs:
+            return rs
+    return False
+
+def _test_servers(servers):
+    for server in servers:
+        if _tests_match(server['discover']):
+            return server
+    return False
+
+
+def _test_versions(versions):
+    for version in versions:
+        if _test_servers(version['servers']):
+            return version
+    return False
+
+
+def _test_os(sysdef):
+# if _tests_match(discover..)
+    v = _test_versions(sysdef['versions'])
+    print v
+
+
+def discover_system(output_obj=False):
+    for path in get_sysdef_paths():
+        sysdefs = get_sysdef_list(path)
+        for sysdef in sysdefs:
+            sd = load_sysdef(sysdef['path'])
+            rs = _test_os(sd)
+            if rs:
+                if output_obj:
+                    return '%s %s (%s)' % (sysdef['name'], rs['version'])
+                else:
+                    return rs
+    return False
 
 # Future fabric version ..
 #from fabric.operations import open_shell
