@@ -30,10 +30,12 @@ parser = OptionParser(usage=usage)
 #parser.add_option("-c", "--clear", dest="clear", action="store_true",
 #                  )
 # Working
-parser.add_option('-s', '--setup',      dest='setup', action='store_true')
+parser.add_option('-c', '--clear',      dest='clear', action='store_true')
 parser.add_option('-d', '--dev',        dest='dev', action='store_true')
+parser.add_option('-f', '--freeze',     dest='freeze', action='store_true')
+parser.add_option('-s', '--setup',      dest='setup', action='store_true')
+parser.add_option('-p', '--push',       dest='push', action='store_true')
 parser.add_option('-u', '--update',     dest='update', action='store_true')
-parser.add_option('-D', '--deploy',     dest='deploy', action='store_true')
 #parser.add_option('-K', '--ssh-keyless-auth', dest='ssh_keyless_auth', action='store_true')
 #parser.add_option('-m', '--move-data',  dest='move_data', action='store_true')
 
@@ -50,16 +52,26 @@ def main():
         if options.dev:
             project = Project()
             project.dev()
+        
+        if options.freeze:
+            project = Project()
+            stage = len(args) and args[0] or 'dev'
+            project.freeze(stage)
+        
+        if options.clear:
+            project = Project()
+            stage = len(args) and args[0] or 'dev'
+            project.clear(stage)
 
         if options.update:
             project = Project()
             stage = len(args) and args[0] or 'dev'
             project.update(stage)
 
-        if options.deploy:
+        if options.push:
             stage = len(args) and args[0] or 'demo'
             project = Project()
-            project.deploy(stage)
+            project.push(stage)
 
        #if options.ssh_keyless_auth:
        #    stage = len(args) and args[0] or 'demo'

@@ -26,18 +26,19 @@ class Project():
 
 
     def update(self, to='dev'):
-        """
-        Update project requirements
-        """
-        print "Updating requirements for %s" % self.project_name
         self._fab('update_requirements -R %s' % to)
 
     
-    def deploy(self, to='demo'):
-        """
-        Deploy a site to a remote server
-        """
-        self._fab('deploy -R %s' % to)
+    def freeze(self, to='dev'):
+        self._fab('freeze_requirements -R %s' % to)
+    
+
+    def clear(self, to='dev'):
+        self._fab('clear_virtualenv -R %s' % to)
+
+    
+    def push(self, to='demo'):
+        self._fab('push -R %s' % to)
    
 
     def move_data(self, src='dev', dest='demo'):

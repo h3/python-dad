@@ -16,11 +16,11 @@ RSYNC_EXCLUDE = (
     '.hg',
     '*.pyc',
     '*.example',
-    '*.db',
+    'Thumbs.db',
     '.svn',
     'media/admin',
-    'media/attachments',
-    'media/uploads',
+#   'media/attachments',
+#   'media/uploads',
     'local_settings.py',
     'fabfile.py',
     'bootstrap.py',
@@ -38,6 +38,33 @@ env.conf            = get_config(env.dadconf_path)
 if env.conf:
     for role in env.conf['roles']:
         env.roledefs[role['name']] = role['hosts']
+
+
+def clear_virtualenv():
+    """ 
+    delete any previous install of this virtualenv and start from scratch 
+    """
+    _setup_env()
+    cmd = 'virtualenv --clear %(venv_path)s' % env
+    if env.role == 'dev':
+        local(cmd)
+    else:
+        sudo(cmd)
+
+
+def freeze_requirements():
+    """ 
+    freeze external dependencies on remote host 
+    """
+    _setup_env()
+    require('requirements', provided_by=env.conf['roles'])
+    with cd(env.venv_path):
+        if console.confirm("Are you sure you want to overrite %(requirements)s ?" % env, default=True):
+            cmd = env.venv_activate +' && pip -E %(venv_path)s freeze > %(requirements)s' % env
+            if env.role == 'dev':
+                local(cmd)
+            else:
+                sudo(cmd)
 
 
 def update_requirements():
@@ -108,14 +135,14 @@ def setupdev(project_name):
         if not os.path.exists(dest):
             _template(src, dest, { 'project_name': project_name })
 
-def deploy():
+def push():
     """ 
     deploy project to remote host 
     """
     _setup_env()
     require('venv_root', provided_by=('demo', 'prod'))
     if env.role == 'prod':
-        if not console.confirm('Are you sure you want to deploy production?', default=False):
+        if not console.confirm('Are you sure you want to deploy %s to production?' % env.project_name, default=False):
             abort('Production deployment aborted.')
 
     sudo("mkdir -p %s" % env.stage['path'])
@@ -153,14 +180,23 @@ def django_syncdb():
 
     if dbconf['ENGINE'].endswith('mysql'):
         _create_mysqldb(dbconf)
+    # Give apache write permission to the project directory
+    elif dbconf['ENGINE'].endswith('sqlite3') and env.role != 'dev':
+        user = 'user' in env.stage and env.stage['user'] or 'www-data'
+        sudo('chown -R %s %s' % (user, os.path.dirname(dbconf['NAME'])))
+        sudo('chmod 777 %s' % dbconf['NAME'])
+        
+
     if env.role in ['prod', 'demo']:
         path = env.stage['path']
         do = run
     else:
         path = env.base_path
         do = local
-    with(cd(os.path.join(path, env.project_name))):
-        do(env.venv_activate +' && %s manage.py syncdb --noinput --settings=settings_%s' % (env.venv_python, env.role))
+
+    if (yes_no_prompt("Do you want to syncdb ?")):
+        with(cd(os.path.join(path, env.project_name))):
+            do(env.venv_activate +' && %s manage.py syncdb --noinput --settings=settings_%s' % (env.venv_python, env.role))
 
 
 def setup_virtualenv():
@@ -177,9 +213,9 @@ def setup_virtualenv():
         do = run
         sudo("mkdir -p %(venv_path)s" % env)
         sudo("chown -R %(user)s %(venv_path)s" % env)
-    
+
     with cd(env.venv_path):
-        do("cd %(venv_root)s && virtualenv --no-site-packages --distribute %(venv_name)s" % env)
+        do("cd %(venv_root)s && virtualenv %(venv_no_site_packages)s %(venv_distribute)s %(venv_name)s" % env)
         do("cd %(venv_root)s && pip install -E %(venv_name)s -r %(requirements)s" % env)
     
     if 'user' in env.stage:
@@ -300,6 +336,15 @@ def _setup_env():
             # TODO: NOT FUNCTIONAL YET !
             env.sysdef = discover_system(True)   
 
+    if 'no_site_packages' in env.stage and env.stage['no_site_packages'] == 'false':
+        env.venv_no_site_packages = '--no-site-packages'
+    else:
+        env.venv_no_site_packages = ''
+
+    if 'setuptools' in env.stage and env.stage['setuptools'] == 'true':
+        env.venv_distribute = ''
+    else:
+        env.venv_distribute = '--distribute'
 
 def _apache_graceful():
     """ 

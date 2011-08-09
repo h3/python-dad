@@ -5,6 +5,8 @@ roles:
       server: 'dev'
       hosts: ['localhost']
       virtualenv: '~/.virtual-envs/'
+    # no_site_packages: false
+    # setuptools: true
     - name: 'prod'
       virtualenv: '/var/www/virtual-envs/'
       path: '/var/www/vhosts/yourproject.com/'
