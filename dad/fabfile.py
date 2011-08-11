@@ -160,7 +160,8 @@ def push():
     if 'user' in env.stage:
         sudo("chown -R %s %s" % (env.stage['user'], env.stage['path']))
 
-    setup_virtualenv()
+    if not files.exists(env.venv_path):
+        setup_virtualenv()
     django_symlink_media()
     django_collect_static()
     django_syncdb()
@@ -204,7 +205,7 @@ def setup_virtualenv():
     Setup virtualenv on remote host 
     """
     _setup_env()
-    if env.host_string == 'localhost':
+    if env.role == 'dev':
         do = local
         local("mkdir -p %(venv_path)s" % env)
         local("chown -R %(user)s %(venv_path)s" % env)

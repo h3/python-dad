@@ -10,8 +10,8 @@ versions:
             chmod: 'www-data'
             graceful: '/etc/init.d/apache2 graceful'
             vhosts: '/etc/apache2/sites-enabled/%(servername)s'
-            error_logs: '/var/log/apache2/%(servername)-error_log'
-            access_logs: '/var/log/apache2/%(servername)-access_log'
+            error_logs: '/var/log/apache2/%(servername)s-error_log'
+            access_logs: '/var/log/apache2/%(servername)s-access_log'
             discover: [
                 ['apache2 -v', '^Server version: Apache/.*'],
                 ['apache2ctl -t -D DUMP_MODULES | grep wsgi', 'wsgi_module'],
