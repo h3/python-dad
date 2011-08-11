@@ -87,7 +87,7 @@ def activate_dev():
     _setup_env()
     print "Starting dev environment for %s" % env.project_name
     bootstrap_path = os.path.join(env.dadconf_path, 'dev.sh')
-    if not os.path.exists(os.path.join(env.venv_path, env.venv_name)):
+    if not os.path.exists(env.venv_path):
         setup_virtualenv()
     else:
         if not os.path.exists(bootstrap_path):
