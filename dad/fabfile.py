@@ -141,6 +141,12 @@ def push():
     """
     _setup_env()
     require('venv_root', provided_by=('demo', 'prod'))
+
+    if env.role == 'dev':
+        use_sudo = False
+    else:
+        use_sudo = True
+
     if env.role == 'prod':
         if not console.confirm('Are you sure you want to deploy %s to production?' % env.project_name, default=False):
             abort('Production deployment aborted.')
@@ -175,7 +181,7 @@ def push():
     sudo("chmod 755 %s" % env.stage['path'])
     sudo("chmod -R 777 %s" % os.path.join(env.stage['path'], env.project_name, 'media'))
 
-    if not files.exists(env.venv_path):
+    if not files.exists(env.venv_path, use_sudo=use_sudo):
         setup_virtualenv()
 
     django_symlink_media()
@@ -246,7 +252,7 @@ def django_symlink_media():
     _setup_env()
     if env.role in ['prod', 'demo']:
         path = os.path.join(env.stage['path'], env.project_name, 'media/')
-        if not files.exists(os.path.join(env.stage['path'], 'media/')):
+        if not files.exists(os.path.join(env.stage['path'], 'media/'), use_sudo=True):
             sudo('ln -sf %s %s' % (path, env.stage['path']))
 
 
