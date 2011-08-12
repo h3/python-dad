@@ -146,22 +146,38 @@ def push():
             abort('Production deployment aborted.')
 
     sudo("mkdir -p %s" % env.stage['path'])
-    sudo("chown -R %s %s" % (env.user, env.stage['path']))
 
     dest_path = env.base_path.endswith('/') and env.base_path or '%s/' % env.base_path
+
+    # We must use a middle directory where we have right access ..
+    # Unfortunatly, it looks like we cannot "sudo rsync"
+    temp_path = '/home/%s/%s-tmp/' % (env.user, env.project_name)
+    run('mkdir %s' % temp_path)
+
     extra_opts = '--omit-dir-times'
     rsync_project(
-        env.stage['path'],
+        temp_path,
         local_dir=dest_path,
         exclude=RSYNC_EXCLUDE,
         delete=True,
         extra_opts=extra_opts,
     )
-    if 'user' in env.stage:
+
+    sudo('cp -rf %s* %s' % (temp_path, env.stage['path']))
+    run('rm -rf %s' % temp_path)
+
+    # Set back proper permissions
+    if 'user' in env.stage and 'group' in env.stage:
+        sudo("chown -R %s:%s %s" % (env.stage['user'], env.stage['group'], env.stage['path']))
+    elif 'user' in env.stage:
         sudo("chown -R %s %s" % (env.stage['user'], env.stage['path']))
+        
+    sudo("chmod 755 %s" % env.stage['path'])
+    sudo("chmod -R 777 %s" % os.path.join(env.stage['path'], env.project_name, 'media'))
 
     if not files.exists(env.venv_path):
         setup_virtualenv()
+
     django_symlink_media()
     django_collect_static()
     django_syncdb()
@@ -211,7 +227,7 @@ def setup_virtualenv():
         local("chown -R %(user)s %(venv_path)s" % env)
         _create_dev_bootstrap(env.venv_path, env.venv_name)
     else:
-        do = run
+        do = sudo 
         sudo("mkdir -p %(venv_path)s" % env)
         sudo("chown -R %(user)s %(venv_path)s" % env)
 
@@ -230,8 +246,8 @@ def django_symlink_media():
     _setup_env()
     if env.role in ['prod', 'demo']:
         path = os.path.join(env.stage['path'], env.project_name, 'media/')
-        if not files.exists(os.path.join(env.stage['path'], 'media')):
-            sudo('ln -s %s %s' % (path, env.stage['path']))
+        if not files.exists(os.path.join(env.stage['path'], 'media/')):
+            sudo('ln -sf %s %s' % (path, env.stage['path']))
 
 
 def django_collect_static():
@@ -338,9 +354,9 @@ def _setup_env():
             env.sysdef = discover_system(True)   
 
     if 'no_site_packages' in env.stage and env.stage['no_site_packages'] == 'false':
-        env.venv_no_site_packages = '--no-site-packages'
-    else:
         env.venv_no_site_packages = ''
+    else:
+        env.venv_no_site_packages = '--no-site-packages'
 
     if 'setuptools' in env.stage and env.stage['setuptools'] == 'true':
         env.venv_distribute = ''
@@ -360,7 +376,7 @@ def _apache_graceful():
     Perform a Apache graceful restart 
     """
     _setup_env()
-    sudo(env.sysdef['graceful'])
+    sudo(env.sysdef['graceful'] % {'servername': env.stage['servername']})
     
 
 def _get_project_name():
@@ -389,18 +405,21 @@ def _create_mysqldb(dbconf):
     """
     _setup_env()
     cmd = ['mysql']
-    if 'USER' in dbconf:
-        cmd.append('-u %s' % dbconf['USER'])
-    if 'PASSWORD' in dbconf:
-        cmd.append('--password=%s' % dbconf['PASSWORD'])
-    if 'HOST' in dbconf:
-        cmd.append('-h %s' % dbconf['HOST'])
-    cmd.append("-e 'CREATE DATABASE IF NOT EXISTS %s;'" % dbconf['NAME'])
+    if not 'plesk' in env.sysdef['type']:
+        if 'USER' in dbconf:
+            cmd.append('-u %s' % dbconf['USER'])
+        if 'PASSWORD' in dbconf:
+            cmd.append('--password=%s' % dbconf['PASSWORD'])
+        if 'HOST' in dbconf:
+            cmd.append('-h %s' % dbconf['HOST'])
+        cmd.append("-e 'CREATE DATABASE IF NOT EXISTS %s;'" % dbconf['NAME'])
 
-    if env.role == 'dev':
-        local(" ".join(cmd))
+        if env.role == 'dev':
+            local(" ".join(cmd))
+        else:
+            run(" ".join(cmd))
     else:
-        run(" ".join(cmd))
+        print "Skipping database creation since this is a plesk managed server."
 
 
 def _apache_configure():
@@ -410,40 +429,39 @@ def _apache_configure():
     _setup_env()
     servername = env.stage['servername']
     src = os.path.join(env.stage['path'], 'apache/%(role)s.conf' % env)
+    if env.role == 'dev':
+        use_sudo = False
+    else:
+        use_sudo = True
 
-    if files.exists(src):
+    if files.exists(src, use_sudo=use_sudo):
+        ctx = {}
         dest_path = env.sysdef['vhosts'] % {'servername': servername}
-        error_log_path = env.sysdef['error_logs'] % {'servername': servername}
-        access_log_path = env.sysdef['access_logs'] % {'servername': servername}
+
+        if 'error_logs' in env.sysdef:
+            ctx['error_logs'] = env.sysdef['error_logs'] % {'servername': servername}
+        
+        if 'access_logs' in env.sysdef:
+            ctx['access_logs'] = env.sysdef['access_logs'] % {'servername': servername}
 
         if 'user' in env.stage:
-            user = env.stage['user']
+            ctx['user'] = env.stage['user']
         else:
-            user = env.userenv.user
+            ctx['user'] = env.user
 
         if 'group' in env.stage:
-            group = env.stage['group']
+            ctx['group'] = env.stage['group']
         else:
-            group = 'www-data'
+            ctx['group'] = 'www-data'
 
-        media_path = os.path.join(env.stage['path'], 'media/')
-        static_path = os.path.join(env.stage['path'], 'static/')
-
-        ctx = {
-            'user': user,
-            'group': group,
-            'project_name': env.project_name,
-            'server_name': servername,
-            'server_admin': env.stage['serveradmin'],
-            'document_root': env.stage['path'],
-            'error_log_path': error_log_path,
-            'access_log_path': access_log_path,
-            'static_path': static_path,
-            'media_path': media_path,
-        }
+        ctx['media_path']    = os.path.join(env.stage['path'], 'media/')
+        ctx['static_path']   = os.path.join(env.stage['path'], 'static/')
+        ctx['project_name']  = env.project_name
+        ctx['server_name']   = servername
+        ctx['server_admin']  = env.stage['serveradmin']
+        ctx['document_root'] = env.stage['path']
        
-        files.upload_template('apache/%(role)s.conf' % env, dest_path, context=ctx, use_sudo=True)
-
+        files.upload_template('apache/%(role)s.conf' % env, dest_path, context=ctx, use_sudo=use_sudo)
     
     else:
         warn("Warning %s not found." % src)

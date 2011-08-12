@@ -7,7 +7,6 @@ versions:
 
           # Apache2 + mod WSGI
           - type: 'apache2+mod_wsgi'
-            chmod: 'www-data'
             graceful: '/etc/init.d/apache2 graceful'
             vhosts: '/etc/apache2/sites-enabled/%(servername)s'
             error_logs: '/var/log/apache2/%(servername)s-error_log'
