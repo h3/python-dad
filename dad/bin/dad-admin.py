@@ -64,8 +64,8 @@ def main():
             project.freeze(stage)
         
         if options.clear:
-            project = Project()
             stage = len(args) and args[0] or 'dev'
+            project = Project()
             project.clear(stage)
 
         if options.update:
