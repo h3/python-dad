@@ -138,48 +138,53 @@ def setupdev(project_name):
 def push():
     """ 
     deploy project to remote host 
+    750     rwxr-x---       "u=rwx,g=rx,a="
+    755     -rwxr-xr-x      "u=rwx,g=rx,o=rx" ?
+    777     -rwxrwxrwx      "u=rwx,g=rwx,o=rwx"
     """
     _setup_env()
     require('venv_root', provided_by=('demo', 'prod'))
+    extra_opts = ['--omit-dir-times']
+
+    print env.user
 
     if env.role == 'dev':
         use_sudo = False
+        do = run
     else:
         use_sudo = True
+        do = sudo
 
     if env.role == 'prod':
         if not console.confirm('Are you sure you want to deploy %s to production?' % env.project_name, default=False):
             abort('Production deployment aborted.')
 
-    sudo("mkdir -p %s" % env.stage['path'])
-
     dest_path = env.base_path.endswith('/') and env.base_path or '%s/' % env.base_path
 
-    # We must use a middle directory where we have right access ..
-    # Unfortunatly, it looks like we cannot "sudo rsync"
-    temp_path = '/home/%s/%s-tmp/' % (env.user, env.project_name)
-    run('mkdir %s' % temp_path)
+    if not files.exists(env.stage['path']):
+        sudo('mkdir -p %s' % env.stage['path'])
+    
+    # Set permission so we can upload
+    sudo('chmod 777 -R %s' % env.stage['path'])
+    sudo('chown -R %s %s' % (env.user, env.stage['path']))
 
-    extra_opts = '--omit-dir-times'
     rsync_project(
-        temp_path,
+        env.stage['path'],
         local_dir=dest_path,
         exclude=RSYNC_EXCLUDE,
         delete=True,
-        extra_opts=extra_opts,
+        extra_opts=" ".join(extra_opts),
     )
 
-    sudo('cp -rf %s* %s' % (temp_path, env.stage['path']))
-    run('rm -rf %s' % temp_path)
-
     # Set back proper permissions
+    sudo('chmod %s -R %s' % ('chmod' in env.stage and env.stage['chmod'] or '755', env.stage['path']))
     if 'user' in env.stage and 'group' in env.stage:
-        sudo("chown -R %s:%s %s" % (env.stage['user'], env.stage['group'], env.stage['path']))
+        do("chown -R %s:%s %s" % (env.stage['user'], env.stage['group'], env.stage['path']))
     elif 'user' in env.stage:
-        sudo("chown -R %s %s" % (env.stage['user'], env.stage['path']))
+        do("chown -R %s %s" % (env.stage['user'], env.stage['path']))
         
-    sudo("chmod 755 %s" % env.stage['path'])
-    sudo("chmod -R 777 %s" % os.path.join(env.stage['path'], env.project_name, 'media'))
+    do("chmod -R 777 %s" % os.path.join(env.stage['path'], env.project_name, 'media'))
+   #do("chmod -R 777 %s" % os.path.join(env.stage['path'], 'static'))
 
     if not files.exists(env.venv_path, use_sudo=use_sudo):
         setup_virtualenv()
@@ -466,7 +471,7 @@ def _apache_configure():
         ctx['server_name']   = servername
         ctx['server_admin']  = env.stage['serveradmin']
         ctx['document_root'] = env.stage['path']
-       
+        
         files.upload_template('apache/%(role)s.conf' % env, dest_path, context=ctx, use_sudo=use_sudo)
     
     else:
