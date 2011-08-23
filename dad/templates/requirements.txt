@@ -20,3 +20,4 @@ http://downloads.sourceforge.net/project/mysql-python/mysql-python/1.2.2/MySQL-p
 #django-sentry
 #-e git+git://github.com/django-mptt/django-mptt.git#egg=mptt
 #-e svn+http://grappelli-fit.googlecode.com/svn/trunk#egg=grappellifit
+#-e svn+http://django-modeltranslation.googlecode.com/svn/trunk#egg=modeltranslation

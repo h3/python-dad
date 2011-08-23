@@ -18,3 +18,4 @@ DATABASES = {
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+TEMPLATE_STRING_IF_INVALID = '{{ Variable not found }}'
