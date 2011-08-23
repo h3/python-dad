@@ -30,13 +30,14 @@ parser = OptionParser(usage=usage)
 #parser.add_option("-c", "--clear", dest="clear", action="store_true",
 #                  )
 # Working
-parser.add_option('-c', '--clear',      dest='clear', action='store_true')
+parser.add_option('-c', '--clear',      type="string", dest='clear', action='store')
 parser.add_option('-d', '--dev',        dest='dev', action='store_true')
-parser.add_option('-f', '--freeze',     dest='freeze', action='store_true')
+parser.add_option('-f', '--freeze',     type="string", dest='freeze', action='store')
 parser.add_option('-s', '--setup',      dest='setup', action='store_true')
-parser.add_option('-p', '--push',       dest='push', action='store_true')
+parser.add_option('-p', '--push',       type="string", dest='push', action='store')
 parser.add_option('-t', '--create-local-templates', dest='create_local_templates', action='store_true')
-parser.add_option('-u', '--update',     dest='update', action='store_true')
+parser.add_option('-u', '--update',     type="string", dest='update', action='store')
+#parser.add_option('-q', '--quiet',      dest='quiet', action='store_true')
 #parser.add_option('-K', '--ssh-keyless-auth', dest='ssh_keyless_auth', action='store_true')
 #parser.add_option('-m', '--move-data',  dest='move_data', action='store_true')
 
@@ -59,22 +60,22 @@ def main():
             project.create_local_templates()
         
         if options.freeze:
+            stage = options.freeze or 'dev'
             project = Project()
-            stage = len(args) and args[0] or 'dev'
             project.freeze(stage)
         
         if options.clear:
-            stage = len(args) and args[0] or 'dev'
+            stage = options.clear or 'dev'
             project = Project()
             project.clear(stage)
 
         if options.update:
             project = Project()
-            stage = len(args) and args[0] or 'dev'
+            stage = options.update or 'dev'
             project.update(stage)
 
         if options.push:
-            stage = len(args) and args[0] or 'demo'
+            stage = options.push or 'demo'
             project = Project()
             project.push(stage)
 
