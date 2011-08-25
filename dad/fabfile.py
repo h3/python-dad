@@ -11,6 +11,8 @@ from fabric.operations import put
 from dad.utils import get_config, yes_no_prompt
 from dad.sysdef import get_sysdef_paths, load_sysdef, get_sysdef_list, get_sysdef
 
+STAGES = ['dev', 'demo', 'prod']
+
 RSYNC_EXCLUDE = (
     '.DS_Store',
     '.hg',
@@ -57,7 +59,7 @@ def freeze_requirements():
     freeze external dependencies on remote host 
     """
     _setup_env()
-    require('requirements', provided_by=env.conf['roles'])
+    require('requirements', provided_by=STAGES)
     with cd(env.venv_path):
         if console.confirm("Are you sure you want to overrite %(requirements)s ?" % env, default=True):
             cmd = env.venv_activate +' && pip -E %(venv_path)s freeze > %(requirements)s' % env
@@ -72,7 +74,7 @@ def update_requirements():
     update external dependencies on remote host 
     """
     _setup_env()
-    require('requirements', provided_by=env.conf['roles'])
+    require('requirements', provided_by=STAGES)
     with cd(env.venv_path):
         cmd = ['pip install']
         cmd += ['-E %(venv_path)s' % env]
@@ -129,11 +131,28 @@ def setupdev(project_name):
             'project_name': project_name,
         })
     
-    for stage in ['dev', 'demo', 'prod']:
+    for stage in STAGES 
         dest = os.path.join(os.path.join(env.base_path, project_name), 'settings_%s.py' % stage)
         src  = _get_template_path('settings_%s.py' % stage)
         if not os.path.exists(dest):
             _template(src, dest, { 'project_name': project_name })
+
+def save_state():
+    _setup_env()
+    
+    if env.role == 'dev':
+        use_sudo = False
+        do = run
+    else:
+        use_sudo = True
+        do = sudo
+
+
+    sudo('tar -pczf rollback.tar.gz %s' % env.stage['path'])
+   
+   #require('venv_root', provided_by=STAGES)
+
+
 
 def push():
     """ 
@@ -145,8 +164,6 @@ def push():
     _setup_env()
     require('venv_root', provided_by=('demo', 'prod'))
     extra_opts = ['--omit-dir-times']
-
-    print env.user
 
     if env.role == 'dev':
         use_sudo = False

@@ -2,7 +2,6 @@ name: 'Fedora'
 discover: ['cat /etc/redhat-release', '*Fedora*']
 versions:
     - versions: ['8']
-      codename: 'Werewolf'
       discover: ['cat /etc/redhat-release', '^Fedora release 8 (Werewolf)$']
       servers:
 
