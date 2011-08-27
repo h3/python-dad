@@ -39,7 +39,7 @@ parser.add_option('-s', '--syncdb',     dest='syncdb', action='store_true')
 parser.add_option('-S', '--save-state', type="string", dest='save_state', action='store')
 parser.add_option('-m', '--manage',     type="string", dest='manage', action='store')
 parser.add_option('-p', '--push',       type="string", dest='push', action='store')
-#parser.add_option('-r', '--rollback',   type="string", dest='rollback', action='store')
+parser.add_option('-r', '--rollback',   type="string", dest='rollback', action='store')
 parser.add_option('-t', '--create-local-templates', dest='create_local_templates', action='store_true')
 parser.add_option('-u', '--update',     type="string", dest='update', action='store')
 #parser.add_option('-q', '--quiet',      dest='quiet', action='store_true')
@@ -93,6 +93,16 @@ def main():
             cmd   = args[0]
             project = Project()
             project.apache(cmd, stage)
+        
+        if options.save_state:
+            stage = options.save_state or 'demo'
+            project = Project()
+            project.save_state(stage)
+        
+        if options.rollback:
+            stage = options.rollback or 'demo'
+            project = Project()
+            project.rollback(stage)
 
        #if options.ssh_keyless_auth:
        #    stage = len(args) and args[0] or 'demo'

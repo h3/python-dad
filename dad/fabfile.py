@@ -11,7 +11,7 @@ from fabric.operations import put, get
 from dad.utils import get_config, yes_no_prompt
 from dad.sysdef import get_sysdef_paths, load_sysdef, get_sysdef_list, get_sysdef
 
-STAGES = ['dev', 'demo', 'prod']
+STAGES = ['dev', 'demo', 'beta', 'prod']
 
 RSYNC_EXCLUDE = (
     '.DS_Store',
@@ -372,7 +372,7 @@ def apache_configure():
     else:
         warn("Warning %s not found." % src)
 
-# Special case ..
+# Special case because it is run as library
 def manage(role, **kwargs):
     _setup_env()
     if env.is_dev:

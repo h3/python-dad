@@ -127,12 +127,12 @@ class Project():
     def create_local_templates(self):
         """ 
         create local templates which override default templates
+        
+        >>> dad-admin.py -t
         """
         tpl_path = os.path.join(os.path.dirname(__file__), 'templates/')
         if not os.path.exists(os.path.expanduser('~/.python-dad/templates/')) or console.confirm("Local template already exists, do you want to overrite ?", False):
             os.system('cp -rf %s ~/.python-dad/' % tpl_path)
-
-
 
 
     def dev(self):
