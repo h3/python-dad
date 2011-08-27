@@ -3,16 +3,19 @@
 
 import os, sys
 
+
+from fabric.api import settings
 from dad.utils import get_config, get_stage, yes_no_prompt
+from dad.fabfile import _setup_env, _get_stage_conf, manage, env
 
 from fabric.contrib import console
+
 
 DEBUG = True
 
 class Project():
 
     def __init__(self, projectname=False):
-        from fabric.state import env
 
         self.base_path       = os.getcwd()
         self.dadconf_path    = os.path.join(self.base_path, 'dad/')
@@ -119,6 +122,29 @@ class Project():
 
         # This wont work from within favbric
         os.system('/bin/bash --rcfile dad/dev.sh')
+
+
+    def apache(self, role, cmd):
+        self._fab('apache_%s -R %s' % (cmd, role))
+
+
+    def manage(self, role, args):
+        """
+        Enter development environment, creates virtualenv if it doesn't exists
+        """
+        _setup_env()
+        print "-----------------------------------__"
+        print 
+        print "-----------------------------------__"
+        
+        for host in _get_stage_conf(role)['hosts']:
+            with settings(host_string=host):
+                manage(role, arguments=args)
+        
+       #fab_cmd = self._fab('-R %s' % role, run=False)
+       #os.system('pwd')
+       #print('%s -- python manage.py %s' % (fab_cmd, args))
+       #os.system('%s -- python manage.py %s' % (fab_cmd, args))
 
 
 #   Requires a newer version of fabric .. because it uses "open_shell"

@@ -30,11 +30,14 @@ parser = OptionParser(usage=usage)
 #parser.add_option("-c", "--clear", dest="clear", action="store_true",
 #                  )
 # Working
+parser.add_option('-a', '--apache',     type="string", dest='apache', action='store')
 parser.add_option('-c', '--clear',      type="string", dest='clear', action='store')
 parser.add_option('-d', '--dev',        dest='dev', action='store_true')
 parser.add_option('-f', '--freeze',     type="string", dest='freeze', action='store')
-parser.add_option('-s', '--setup',      dest='setup', action='store_true')
-parser.add_option('-S', '--save-state', type="string", dest='setup', action='store')
+parser.add_option('-i', '--install',    dest='install', action='store_true')
+parser.add_option('-s', '--syncdb',     dest='syncdb', action='store_true')
+parser.add_option('-S', '--save-state', type="string", dest='save_state', action='store')
+parser.add_option('-m', '--manage',     type="string", dest='manage', action='store')
 parser.add_option('-p', '--push',       type="string", dest='push', action='store')
 #parser.add_option('-r', '--rollback',   type="string", dest='rollback', action='store')
 parser.add_option('-t', '--create-local-templates', dest='create_local_templates', action='store_true')
@@ -48,7 +51,7 @@ def main():
     (options, args) = parser.parse_args()
 
     try:
-        if options.setup:
+        if options.install:
             name = len(args) and args[0].replace('/', '') or False
             project = Project(name)
             project.setupdev()
@@ -56,6 +59,10 @@ def main():
         if options.dev:
             project = Project()
             project.dev()
+        
+        if options.manage:
+            project = Project()
+            project.manage(options.manage, ' '.join(args).replace('+', '-').replace('++', '--'))
 
         if options.create_local_templates:
             project = Project()
@@ -80,6 +87,12 @@ def main():
             stage = options.push or 'demo'
             project = Project()
             project.push(stage)
+        
+        if options.apache:
+            stage = options.apache or 'demo'
+            cmd   = args[0]
+            project = Project()
+            project.apache(cmd, stage)
 
        #if options.ssh_keyless_auth:
        #    stage = len(args) and args[0] or 'demo'

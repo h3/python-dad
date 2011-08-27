@@ -6,7 +6,7 @@ from fabric.contrib import files, console, django
 from fabric.utils import abort, warn
 from fabric.decorators import hosts
 from fabric.network import interpret_host_string
-from fabric.operations import put
+from fabric.operations import put, get
 
 from dad.utils import get_config, yes_no_prompt
 from dad.sysdef import get_sysdef_paths, load_sysdef, get_sysdef_list, get_sysdef
@@ -30,12 +30,31 @@ RSYNC_EXCLUDE = (
 
 output['debug'] = True
 
-env.base_path       = os.getcwd()
+env.base_path = os.getcwd()
+if os.path.exists(os.path.join(env.base_path, 'manage.py')):
+    env.base_path = os.path.abspath(os.path.join(env.base_path, '../'))
+
+
+   #print "++"
+   #print os.getcwd()
+   #print "++"
+   #print path
+   #print "~~"
+   #if os.path.exists(os.path.join(path, 'manage.py')):
+   #    print "YSY"
+   #    path = os.path.abspath(os.path.join(path, '../'))
+   #print "--"
+   #print path
+   #print os.path.join(path, '../')
+   #print "--"
+   #print f
+
 env.dadconf_path    = os.path.join(env.base_path, 'dad/')
 env.apacheconf_path = os.path.join(env.base_path, 'apache/')
 env.dad_path        = os.path.dirname(__file__)
 env.tpl_path        = os.path.join(env.dad_path, 'templates/')
 env.conf            = get_config(env.dadconf_path)
+
 
 if env.conf:
     for role in env.conf['roles']:
@@ -100,12 +119,6 @@ would you like to use this one ? Otherwise it will be deleted and recreated.", T
                 local("rm -rf %s" % os.path.join(env.venv_path, env.venv_name))
                 setup_virtualenv()
 
-#   # Not sure if needed anymore
-#   stage = _get_stage_conf(env.role)
-#   if 'user' in stage:
-#       env.user = stage['user']
-#   env.hosts = stage['hosts']
-
 
 def setupdev(project_name):
     print "Setuping %s" % project_name
@@ -131,26 +144,56 @@ def setupdev(project_name):
             'project_name': project_name,
         })
     
-    for stage in STAGES 
+    for stage in STAGES:
         dest = os.path.join(os.path.join(env.base_path, project_name), 'settings_%s.py' % stage)
         src  = _get_template_path('settings_%s.py' % stage)
         if not os.path.exists(dest):
             _template(src, dest, { 'project_name': project_name })
 
+
 def save_state():
+    """
+    Saves the state of a remote stage for rollback
+    """
+    require('role', provided_by=STAGES)
     _setup_env()
-    
+
     if env.role == 'dev':
-        use_sudo = False
-        do = run
-    else:
-        use_sudo = True
-        do = sudo
+        abort('This comman only works on remote stages (%s)' % ', '.join(STAGES))
 
+    # copy vhost src
+    sudo("tar -pczf /tmp/rollback.tar.gz --exclude='rollback.tar.gz' %s" % env.stage['path'])
+    sudo('mv /tmp/rollback.tar.gz %s' % env.stage['path'])
 
-    sudo('tar -pczf rollback.tar.gz %s' % env.stage['path'])
+def configure_site():
+    require('role', provided_by=STAGES)
+    _setup_env()
+    set_permissions()
+
+    if not files.exists(env.venv_path, use_sudo=use_sudo):
+        setup_virtualenv()
+
+    django_symlink_media()
+    django_collect_static()
+    django_syncdb()
+    apache_configure()
+    apache_graceful()
+
    
-   #require('venv_root', provided_by=STAGES)
+def rollback():
+    require('role', provided_by=STAGES)
+    _setup_env()
+
+    if env.is_dev:
+        abort('This comman only works on remote stages (%s)' % ', '.join(STAGES))
+    
+    rb_path = '%srollback.tar.gz %s' % env.stage['path']
+    if not files.exists(rb_path):
+        abort('Rollback file not found (%s)' % rb_path)
+
+    sudo('mv %s %s' % (rb_path, env.stage['path']))
+
+    configure_site()
 
 
 
@@ -165,7 +208,7 @@ def push():
     require('venv_root', provided_by=('demo', 'prod'))
     extra_opts = ['--omit-dir-times']
 
-    if env.role == 'dev':
+    if env.is_dev:
         use_sudo = False
         do = run
     else:
@@ -193,7 +236,13 @@ def push():
         extra_opts=" ".join(extra_opts),
     )
 
-    # Set back proper permissions
+    configure_site()
+
+
+def set_permissions():
+    _setup_env()
+    do = env.is_dev and run or sudo
+    
     sudo('chmod %s -R %s' % ('chmod' in env.stage and env.stage['chmod'] or '755', env.stage['path']))
     if 'user' in env.stage and 'group' in env.stage:
         do("chown -R %s:%s %s" % (env.stage['user'], env.stage['group'], env.stage['path']))
@@ -201,16 +250,6 @@ def push():
         do("chown -R %s %s" % (env.stage['user'], env.stage['path']))
         
     do("chmod -R 777 %s" % os.path.join(env.stage['path'], env.project_name, 'media'))
-   #do("chmod -R 777 %s" % os.path.join(env.stage['path'], 'static'))
-
-    if not files.exists(env.venv_path, use_sudo=use_sudo):
-        setup_virtualenv()
-
-    django_symlink_media()
-    django_collect_static()
-    django_syncdb()
-    _apache_configure()
-    _apache_graceful()
 
 
 def django_syncdb():
@@ -218,9 +257,10 @@ def django_syncdb():
     Synchronize/create database on remote host 
     """
     _setup_env()
-    django.settings_module('%(project_name)s.settings_%(role)s' % env)
     sys.path.append(env.base_path)
-    from django.conf import settings
+    django.settings_module('%(project_name)s.settings_%(role)s' % env)
+    settings = __import__('%(project_name)s.settings_%(role)s' % env)
+
     dbconf = settings.DATABASES['default']
 
     if dbconf['ENGINE'].endswith('mysql'):
@@ -249,7 +289,7 @@ def setup_virtualenv():
     Setup virtualenv on remote host 
     """
     _setup_env()
-    if env.role == 'dev':
+    if env.is_dev:
         do = local
         local("mkdir -p %(venv_path)s" % env)
         local("chown -R %(user)s %(venv_path)s" % env)
@@ -272,7 +312,7 @@ def django_symlink_media():
     create symbolic link so Apache can serve django admin media 
     """
     _setup_env()
-    if env.role in ['prod', 'demo']:
+    if not env.is_dev:
         path = os.path.join(env.stage['path'], env.project_name, 'media/')
         if not files.exists(os.path.join(env.stage['path'], 'media/'), use_sudo=True):
             sudo('ln -sf %s %s' % (path, env.stage['path']))
@@ -283,14 +323,83 @@ def django_collect_static():
     create symbolic link so Apache can serve django admin media 
     """
     _setup_env()
-    if env.role in ['prod', 'demo']:
-        path = env.stage['path']
-        do = sudo
-    else:
+    if env.is_dev:
         path = env.base_path
         do = local
+    else:
+        path = env.stage['path']
+        do = sudo
     with(cd(os.path.join(path, env.project_name))):
         sudo(env.venv_activate +' && python manage.py collectstatic --link --noinput')
+
+def apache_graceful():
+    """ 
+    Perform a Apache graceful restart 
+    """
+    _setup_env()
+    sudo(env.sysdef['graceful'] % {'servername': env.stage['servername']})
+
+
+def apache_configure():
+    """
+    Configure a remote apache server
+    """
+    _setup_env()
+    servername = env.stage['servername']
+    src = os.path.join(env.stage['path'], 'apache/%(role)s.conf' % env)
+    if env.role == 'dev':
+        use_sudo = False
+    else:
+        use_sudo = True
+
+    if files.exists(src, use_sudo=use_sudo):
+        ctx = {}
+        dest_path = env.sysdef['vhosts'] % {'servername': servername}
+
+        if 'error_logs' in env.sysdef:
+            ctx['error_logs'] = env.sysdef['error_logs'] % {'servername': servername}
+        
+        if 'access_logs' in env.sysdef:
+            ctx['access_logs'] = env.sysdef['access_logs'] % {'servername': servername}
+
+        if 'user' in env.stage:
+            ctx['user'] = env.stage['user']
+        else:
+            ctx['user'] = env.user
+
+        if 'group' in env.stage:
+            ctx['group'] = env.stage['group']
+        else:
+            ctx['group'] = 'www-data'
+
+        ctx['media_path']    = os.path.join(env.stage['path'], 'media/')
+        ctx['static_path']   = os.path.join(env.stage['path'], 'static/')
+        ctx['project_name']  = env.project_name
+        ctx['project_path']  = env.project_path
+        ctx['server_name']   = servername
+        ctx['server_admin']  = env.stage['serveradmin']
+        ctx['document_root'] = env.stage['path']
+
+        tpl = 'apache/%(role)s.conf' % env
+        get(os.path.join(env.stage['path'], tpl))
+        files.upload_template(tpl, dest_path, context=ctx, use_sudo=use_sudo)
+    
+    else:
+        warn("Warning %s not found." % src)
+
+# Special case ..
+def manage(role, **kwargs):
+    _setup_env()
+    if env.is_dev:
+        path = env.project_path
+        do = run
+    else:
+        path = os.path.join(_get_stage_conf(role)['path'], env.conf['project']['name'])
+        do = sudo
+
+    with(cd(path)):
+        do(env.venv_activate +' && %s manage.py %s' % (env.venv_python, kwargs['arguments']))
+
 
 
 def dump_data(filename):
@@ -298,17 +407,17 @@ def dump_data(filename):
     dumps database data with dumpdata
     """
     _setup_env()
-    if env.role in ['prod', 'demo']:
-        path = env.stage['path']
-        do = sudo
-    else:
+    if env.is_dev:
         path = env.base_path
         do = local
+    else:
+        path = env.stage['path']
+        do = sudo
 
     do('cd %s && %s && python manage.py dumpdata --settings=settings_%s > %s ' % (
         os.path.join(path, env.project_name), env.venv_activate, env.role, filename))
 
-    if env.role == 'dev':
+    if env.is_dev:
         do('cd %s' % path)
 
 
@@ -338,7 +447,7 @@ def upload_file(filename, dest):
     _setup_env()
     dest_stage = _get_stage_conf(dest)
     # From dev to prod or demo
-    if env.role == 'dev':
+    if env.is_dev:
         src = filename
         with(cd('/tmp/')):
             put(src, os.path.join(dest_stage['path'], env.project_name))
@@ -352,6 +461,9 @@ def _setup_env():
     for roledef in env.roledefs:
         if env.host_string in env.roledefs[roledef]:
             env.role = roledef
+            setattr(env, 'is_%s' % roledef, True)
+        else:
+            setattr(env, 'is_%s' % roledef, False)
 
     if not hasattr(env, 'role'):
         env.role  = 'dev'
@@ -398,13 +510,6 @@ def _get_template(tpl):
         return local_path
     else:
         return global_path
-
-def _apache_graceful():
-    """ 
-    Perform a Apache graceful restart 
-    """
-    _setup_env()
-    sudo(env.sysdef['graceful'] % {'servername': env.stage['servername']})
     
 
 def _get_project_name():
@@ -421,9 +526,10 @@ def _get_stage_conf(stage):
     """
     Get configurations for a given stage
     """
-    for role in env.conf['roles']:
-        if role['name'] == stage:
-            return role
+    if env.conf:
+        for role in env.conf['roles']:
+            if role['name'] == stage:
+                return role
     return False
 
 
@@ -450,51 +556,6 @@ def _create_mysqldb(dbconf):
         print "Skipping database creation since this is a plesk managed server."
 
 
-def _apache_configure():
-    """
-    Configure a remote apache server
-    """
-    _setup_env()
-    servername = env.stage['servername']
-    src = os.path.join(env.stage['path'], 'apache/%(role)s.conf' % env)
-    if env.role == 'dev':
-        use_sudo = False
-    else:
-        use_sudo = True
-
-    if files.exists(src, use_sudo=use_sudo):
-        ctx = {}
-        dest_path = env.sysdef['vhosts'] % {'servername': servername}
-
-        if 'error_logs' in env.sysdef:
-            ctx['error_logs'] = env.sysdef['error_logs'] % {'servername': servername}
-        
-        if 'access_logs' in env.sysdef:
-            ctx['access_logs'] = env.sysdef['access_logs'] % {'servername': servername}
-
-        if 'user' in env.stage:
-            ctx['user'] = env.stage['user']
-        else:
-            ctx['user'] = env.user
-
-        if 'group' in env.stage:
-            ctx['group'] = env.stage['group']
-        else:
-            ctx['group'] = 'www-data'
-
-        ctx['media_path']    = os.path.join(env.stage['path'], 'media/')
-        ctx['static_path']   = os.path.join(env.stage['path'], 'static/')
-        ctx['project_name']  = env.project_name
-        ctx['server_name']   = servername
-        ctx['server_admin']  = env.stage['serveradmin']
-        ctx['document_root'] = env.stage['path']
-        
-        files.upload_template('apache/%(role)s.conf' % env, dest_path, context=ctx, use_sudo=use_sudo)
-    
-    else:
-        warn("Warning %s not found." % src)
-
-
 def _create_dev_bootstrap(env_path, env_name):
     """
     Create the bootstrap bash script that wraps
@@ -510,7 +571,7 @@ def _create_dev_bootstrap(env_path, env_name):
 def _template(src, dest, variables):
     """
     Opens src file, read its content, inject variables in it and
-    write the output to dest
+    write the output to destination. Works only with local files!
     """
     fs = open(src, 'r')
     fd = open(dest, 'w+')
@@ -601,12 +662,6 @@ def discover_system(output_obj=False):
 
 # References ..
 
-#def _setup_path():
-#    env.root = os.path.join(env.home, 'www', env.environment)
-#    env.code_root = os.path.join(env.root, env.project)
-#    env.virtualenv_root = os.path.join(env.root, 'env')
-#    env.settings = '%(project)s.settings_%(environment)s' % env
-#
 #
 #def staging():
 #    """ use staging environment on remote host"""
