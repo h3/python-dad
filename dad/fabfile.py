@@ -34,21 +34,6 @@ env.base_path = os.getcwd()
 if os.path.exists(os.path.join(env.base_path, 'manage.py')):
     env.base_path = os.path.abspath(os.path.join(env.base_path, '../'))
 
-
-   #print "++"
-   #print os.getcwd()
-   #print "++"
-   #print path
-   #print "~~"
-   #if os.path.exists(os.path.join(path, 'manage.py')):
-   #    print "YSY"
-   #    path = os.path.abspath(os.path.join(path, '../'))
-   #print "--"
-   #print path
-   #print os.path.join(path, '../')
-   #print "--"
-   #print f
-
 env.dadconf_path    = os.path.join(env.base_path, 'dad/')
 env.apacheconf_path = os.path.join(env.base_path, 'apache/')
 env.dad_path        = os.path.dirname(__file__)
@@ -596,7 +581,6 @@ def _tests_match(tests):
     else:
         _setup_env()
         if env.role == 'dev':
-            print tests[0]
             output = commands.getoutput(tests[0])
         else:
             output = run(tests[0])

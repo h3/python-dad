@@ -31,18 +31,38 @@ class Project():
 
 
     def update(self, to='dev'):
+        """
+        Update pip requirements on a given stage
+
+        >>> dad-admin.py -u dev
+        """
         self._fab('update_requirements -R %s' % to)
 
     
     def freeze(self, to='dev'):
+        """
+        Freeze the requirements for a given stage
+
+        >>> dad-admin.py -f dev
+        """
         self._fab('freeze_requirements -R %s' % to)
     
 
     def clear(self, to='dev'):
+        """
+        Clear the virtualenv on a given stage
+
+        >>> dad-admin.py -c dev
+        """
         self._fab('clear_virtualenv -R %s' % to)
 
     
     def push(self, to='demo'):
+        """
+        Deploy the project on a given stage
+
+        >>> dad-admin.py -p dev
+        """
         self._fab('push -R %s' % to)
    
 
@@ -93,6 +113,8 @@ class Project():
     def setupdev(self):
         """
         Setup development environment. Copies template files and create dad/ directory.
+        
+        >>> dad-admin.py -i projectname/
         """
 
         if not self.project_name:
@@ -116,6 +138,8 @@ class Project():
     def dev(self):
         """
         Enter development environment, creates virtualenv if it doesn't exists
+        
+        >>> dad-admin.py -d
         """
         
         self._fab('activate_dev -R dev')
@@ -130,23 +154,18 @@ class Project():
 
     def manage(self, role, args):
         """
-        Enter development environment, creates virtualenv if it doesn't exists
+        Execute the python.manage.py command on a remote host.
+
+        Argument prefix must be replaced with "+"
+
+        >>> dad-admin.py -m syncdb ++settings=settings_dev
         """
         _setup_env()
-        print "-----------------------------------__"
-        print 
-        print "-----------------------------------__"
         
         for host in _get_stage_conf(role)['hosts']:
             with settings(host_string=host):
                 manage(role, arguments=args)
         
-       #fab_cmd = self._fab('-R %s' % role, run=False)
-       #os.system('pwd')
-       #print('%s -- python manage.py %s' % (fab_cmd, args))
-       #os.system('%s -- python manage.py %s' % (fab_cmd, args))
-
-
 #   Requires a newer version of fabric .. because it uses "open_shell"
 #   def ssh_keyless_auth(self, to='demo'):
 #       """
