@@ -377,13 +377,13 @@ def manage(role, **kwargs):
     _setup_env()
     if env.is_dev:
         path = env.project_path
-        do = run
+        do = local
     else:
         path = os.path.join(_get_stage_conf(role)['path'], env.conf['project']['name'])
         do = sudo
 
     with(cd(path)):
-        do(env.venv_activate +' && %s manage.py %s' % (env.venv_python, kwargs['arguments']))
+        print do(env.venv_activate +' && %s manage.py %s' % (env.venv_python, kwargs['arguments']))
 
 
 
