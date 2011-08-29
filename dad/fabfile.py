@@ -286,8 +286,8 @@ def setup_virtualenv():
         sudo("chown -R %(user)s %(venv_path)s" % env)
 
     with cd(env.venv_root):
-        do("virtualenv %(venv_no_site_packages)s %(venv_distribute)s %(venv_name)s" % env)
-        do("pip install -E %(venv_name)s -r %(requirements)s" % env)
+        do("cd %(venv_root)s && virtualenv %(venv_no_site_packages)s %(venv_distribute)s %(venv_name)s" % env)
+        do("cd %(venv_root)s && pip install -E %(venv_name)s -r %(requirements)s" % env)
     
     if 'user' in env.stage:
         sudo("chown -R %s %s" % (env.stage['user'], env.venv_root))
