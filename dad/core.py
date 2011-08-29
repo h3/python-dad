@@ -64,6 +64,24 @@ class Project():
         >>> dad-admin.py -p dev
         """
         self._fab('push -R %s' % to)
+
+    
+    def save_state(self, to='demo'):
+        """
+        Saves the state of a given stage for rollback
+
+        >>> dad-admin.py -S dev
+        """
+        self._fab('save_state -R %s' % to)
+
+    
+    def rollback(self, to='demo'):
+        """
+        Rollback a given stage to the last stage
+
+        >>> dad-admin.py -S dev
+        """
+        self._fab('rollback -R %s' % to)
    
 
     def move_data(self, src='dev', dest='demo'):

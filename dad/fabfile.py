@@ -136,20 +136,6 @@ def setupdev(project_name):
             _template(src, dest, { 'project_name': project_name })
 
 
-def save_state():
-    """
-    Saves the state of a remote stage for rollback
-    """
-    require('role', provided_by=STAGES)
-    _setup_env()
-
-    if env.role == 'dev':
-        abort('This comman only works on remote stages (%s)' % ', '.join(STAGES))
-
-    # copy vhost src
-    sudo("tar -pczf /tmp/rollback.tar.gz --exclude='rollback.tar.gz' %s" % env.stage['path'])
-    sudo('mv /tmp/rollback.tar.gz %s' % env.stage['path'])
-
 def configure_site():
     require('role', provided_by=STAGES)
     _setup_env()
@@ -163,6 +149,21 @@ def configure_site():
     django_syncdb()
     apache_configure()
     apache_graceful()
+
+
+def save_state():
+    """
+    Saves the state of a remote stage for rollback
+    """
+    #require('role', provided_by=STAGES)
+    _setup_env()
+
+    if env.role == 'dev':
+        abort('This command only works on remote stages (%s)' % ', '.join(STAGES[1:]))
+
+    # copy vhost src
+    sudo("tar -pczf /tmp/rollback.tar.gz --exclude='rollback.tar.gz' %s" % env.stage['path'])
+    sudo('mv /tmp/rollback.tar.gz %s' % env.stage['path'])
 
    
 def rollback():
@@ -284,9 +285,9 @@ def setup_virtualenv():
         sudo("mkdir -p %(venv_path)s" % env)
         sudo("chown -R %(user)s %(venv_path)s" % env)
 
-    with cd(env.venv_path):
-        do("cd %(venv_root)s && virtualenv %(venv_no_site_packages)s %(venv_distribute)s %(venv_name)s" % env)
-        do("cd %(venv_root)s && pip install -E %(venv_name)s -r %(requirements)s" % env)
+    with cd(env.venv_root):
+        do("virtualenv %(venv_no_site_packages)s %(venv_distribute)s %(venv_name)s" % env)
+        do("pip install -E %(venv_name)s -r %(requirements)s" % env)
     
     if 'user' in env.stage:
         sudo("chown -R %s %s" % (env.stage['user'], env.venv_root))
