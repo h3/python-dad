@@ -141,9 +141,12 @@ def configure_site():
     _setup_env()
     set_permissions()
 
+    use_sudo = env.is_dev and False or True
+
     if not files.exists(env.venv_path, use_sudo=use_sudo):
         setup_virtualenv()
 
+    update_requirements()
     django_symlink_media()
     django_collect_static()
     django_syncdb()

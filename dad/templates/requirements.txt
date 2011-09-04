@@ -4,6 +4,7 @@ django==1.3
 pillow
 Markdown
 simplejson
+ipython
 
 # The "MySQL-python" requirement should theorically work..
 # But it practice the pip installation is broken :(
@@ -12,9 +13,11 @@ http://downloads.sourceforge.net/project/mysql-python/mysql-python/1.2.2/MySQL-p
 
 #django-grappelli
 #-e svn+http://grappelli-fit.googlecode.com/svn/trunk#egg=grappelli-fit
-
 #-e svn+http://django-modeltranslation.googlecode.com/svn/trunk#egg=django-modeltranslation
 #-e git+git://github.com/h3/webcore-generic-flatblocks.git#egg=django-generic-flatblocks
+#-e git+git://github.com/h3/django-treenav.git#egg=django-treenav
+#-e git+git://github.com/django-mptt/django-mptt.git#egg=django-mptt
+#-e git+git://github.com/jpwatts/django-positions.git#egg=django-positions
 #easy-thumbnails
 #django-debug-toolbar
 #django-sentry
@@ -28,6 +31,4 @@ http://downloads.sourceforge.net/project/mysql-python/mysql-python/1.2.2/MySQL-p
 #django-socialregistration
 #django-userena
 
-#-e git+git://github.com/django-mptt/django-mptt.git#egg=django-mptt
-#-e git+git://github.com/caktus/django-treenav.git#egg=django-treenav
 
