@@ -13,6 +13,7 @@ http://downloads.sourceforge.net/project/mysql-python/mysql-python/1.2.2/MySQL-p
 
 #django-grappelli
 #-e svn+http://grappelli-fit.googlecode.com/svn/trunk#egg=grappelli-fit
+#-e git+git://github.com/ericflo/django-pagination.git#django-pagination
 #-e svn+http://django-modeltranslation.googlecode.com/svn/trunk#egg=django-modeltranslation
 #-e git+git://github.com/h3/webcore-generic-flatblocks.git#egg=django-generic-flatblocks
 #-e git+git://github.com/h3/django-treenav.git#egg=django-treenav
