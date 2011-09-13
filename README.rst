@@ -8,7 +8,7 @@ Goals
 =====
 
  * Be easy to use (little to no knowledge of pip/fabric/virtualenv needed)
- * Streamline django installation on different stages (dev, demo, prod)
+ * Streamline django installation on different stages (dev, demo, beta, prod)
  * Spread some pony love 
 
 
