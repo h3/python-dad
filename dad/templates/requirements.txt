@@ -4,7 +4,6 @@ django==1.3
 pillow
 Markdown
 simplejson
-ipython
 
 # The "MySQL-python" requirement should theorically work..
 # But it practice the pip installation is broken :(
@@ -20,7 +19,6 @@ http://downloads.sourceforge.net/project/mysql-python/mysql-python/1.2.2/MySQL-p
 #-e git+git://github.com/django-mptt/django-mptt.git#egg=django-mptt
 #-e git+git://github.com/jpwatts/django-positions.git#egg=django-positions
 #easy-thumbnails
-#django-debug-toolbar
 #django-sentry
 #django-reversion
 
