@@ -54,7 +54,7 @@ def main():
         if options.install:
             name = len(args) and args[0].replace('/', '') or False
             project = Project(name)
-            project.setupdev()
+            project.install()
 
         if options.dev:
             project = Project()

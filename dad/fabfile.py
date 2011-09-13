@@ -67,7 +67,7 @@ def freeze_requirements():
     with cd(env.venv_path):
         if console.confirm("Are you sure you want to overrite %(requirements)s ?" % env, default=True):
             cmd = env.venv_activate +' && pip -E %(venv_path)s freeze > %(requirements)s' % env
-            if env.role == 'dev':
+            if env.is_dev:
                 local(cmd)
             else:
                 sudo(cmd)
@@ -84,12 +84,24 @@ def update_requirements():
         cmd += ['-E %(venv_path)s' % env]
         cmd += ['--requirement %(requirements)s' % env]
 
-        if env.role == 'dev':
-            local(' '.join(cmd))
-        else:
-            sudo(' '.join(cmd))
+        do = sudo
+        if env.is_dev:
+            do = local
 
-def activate_dev():
+        do(' '.join(cmd))
+
+    if env.is_dev:
+        symlink_virtualenv_src()
+
+
+def setup_dev():
+    """
+    Activates the development environment. These actions are performed:
+
+     * Create a virtualenv if it doesn't already exists
+     * Create bootstrap script if it doesn't already exists
+
+    """
     _setup_env()
     print "Starting dev environment for %s" % env.project_name
     bootstrap_path = os.path.join(env.dadconf_path, 'dev.sh')
@@ -105,8 +117,8 @@ would you like to use this one ? Otherwise it will be deleted and recreated.", T
                 setup_virtualenv()
 
 
-def setupdev(project_name):
-    print "Setuping %s" % project_name
+def install(project_name):
+    print "Installing dad for %s" % project_name
     env.project_name = project_name
 
     # Copy templates
@@ -277,6 +289,18 @@ def django_syncdb():
             do(env.venv_activate +' && %s manage.py syncdb --noinput --settings=settings_%s' % (env.venv_python, env.role))
 
 
+def symlink_virtualenv_src():
+    """
+    Creates a symlink that points to the src directory of the virtualenv
+    for development purpose. This commands should only be issued for the dev stage.
+    """
+    _setup_env()
+    src  = "%(venv_path)s/src" % env
+    dest = os.path.join(env.base_path, 'src')
+    if env.is_dev and not os.path.exists(dest) and os.path.exists(src):
+        local("ln -s %s %s" % (src, dest))
+
+
 def setup_virtualenv():
     """ 
     Setup virtualenv on remote host 
@@ -284,19 +308,18 @@ def setup_virtualenv():
     _setup_env()
     if env.is_dev:
         do = local
-        local("mkdir -p %(venv_path)s" % env)
-        local("chown -R %(user)s %(venv_path)s" % env)
         _create_dev_bootstrap(env.venv_path, env.venv_name)
     else:
         do = sudo 
-        sudo("mkdir -p %(venv_path)s" % env)
-        sudo("chown -R %(user)s %(venv_path)s" % env)
+
+    do("mkdir -p %(venv_path)s && chown -R %(user)s %(venv_path)s" % env)
 
     with cd(env.venv_root):
         do("cd %(venv_root)s && virtualenv %(venv_no_site_packages)s %(venv_distribute)s %(venv_name)s" % env)
-        do("cd %(venv_root)s && pip install -E %(venv_name)s -r %(requirements)s" % env)
+
+    update_requirements()
     
-    if 'user' in env.stage:
+    if 'user' in env.stage and not env.is_dev:
         sudo("chown -R %s %s" % (env.stage['user'], env.venv_root))
 
 
@@ -495,6 +518,7 @@ def _setup_env():
         env.venv_distribute = ''
     else:
         env.venv_distribute = '--distribute'
+
 
 def _get_template(tpl):
     local_path = os.path.join(os.path.expanduser('~/.python-dad/templates/'), tpl)

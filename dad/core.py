@@ -128,9 +128,9 @@ class Project():
             return cmd
 
 
-    def setupdev(self):
+    def install(self):
         """
-        Setup development environment. Copies template files and create dad/ directory.
+        Install dad on development environment. Copies template files and create dad/ directory.
         
         >>> dad-admin.py -i projectname/
         """
@@ -139,7 +139,7 @@ class Project():
             sys.stderr.write("Error: please provide a project name.\n")
             sys.exit(0)
 
-        self._fab('setupdev:%s' % self.project_name)
+        self._fab('install:%s' % self.project_name)
 
     
     def create_local_templates(self):
@@ -160,9 +160,9 @@ class Project():
         >>> dad-admin.py -d
         """
         
-        self._fab('activate_dev -R dev')
+        self._fab('setup_dev -R dev')
 
-        # This wont work from within favbric
+        # This wont work from within fabric
         os.system('/bin/bash --rcfile dad/dev.sh')
 
 
