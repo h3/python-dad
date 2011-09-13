@@ -79,16 +79,19 @@ def update_requirements():
     """
     _setup_env()
     require('requirements', provided_by=STAGES)
+    requirements_list = [env.role, 'base']
     with cd(env.venv_path):
-        cmd = ['pip install']
-        cmd += ['-E %(venv_path)s' % env]
-        cmd += ['--requirement %(requirements)s' % env]
+        for stage in requirements_list:
+            if stage in env.requirements:
+                cmd =  ['pip install']
+                cmd += ['-E %(venv_path)s' % env]
+                cmd += ['--requirement %s' % env.requirements[stage]]
 
-        do = sudo
-        if env.is_dev:
-            do = local
+                do = sudo
+                if env.is_dev:
+                    do = local
 
-        do(' '.join(cmd))
+                do(' '.join(cmd))
 
     if env.is_dev:
         symlink_virtualenv_src()
@@ -136,7 +139,11 @@ def install(project_name):
         warn("Warning: dad config directory already exists, skipping.\n")
     else:
         local('mkdir %s' % env.dadconf_path)
+        # requirements.txt
         local('cp %s %s' % (_get_template('requirements.txt'), env.dadconf_path))
+        for stage in STAGES:
+            local('cp %s %s' % (_get_template('requirements_%s.txt' % stage), env.dadconf_path))
+
         _template(_get_template('project.yml'), os.path.join(env.dadconf_path, 'project.yml'), {
             'project_name': project_name,
         })
@@ -362,7 +369,8 @@ def apache_configure():
     """
     _setup_env()
     servername = env.stage['servername']
-    src = os.path.join(env.stage['path'], 'apache/%(role)s.conf' % env)
+    tpl = 'apache/%(role)s.conf' % env
+    src = os.path.join(env.stage['path'], tpl)
     if env.role == 'dev':
         use_sudo = False
     else:
@@ -396,9 +404,8 @@ def apache_configure():
         ctx['server_admin']  = env.stage['serveradmin']
         ctx['document_root'] = env.stage['path']
 
-        tpl = 'apache/%(role)s.conf' % env
-        get(os.path.join(env.stage['path'], tpl))
-        files.upload_template(tpl, dest_path, context=ctx, use_sudo=use_sudo)
+        get(os.path.join(env.stage['path'], tpl), '/tmp/test')
+        files.upload_template(tpl, dest_path, context=ctx, use_sudo=use_sudo, backup=False)
     
     else:
         warn("Warning %s not found." % src)
@@ -492,11 +499,18 @@ def _setup_env():
     env.venv_path       = os.path.join(env.venv_root, env.venv_name)
     env.venv_activate   = '. %s' % os.path.join(env.venv_path, 'bin/activate')
     env.venv_python     = os.path.join(env.venv_path, 'bin/python')
+    env.requirements    = {}
     
-    if env.role == 'dev':
-        env.requirements = os.path.join(env.dadconf_path, 'requirements.txt')
+    if env.is_dev:
+        env.requirements_base_path = os.path.join(env.dadconf_path)
     else:
-        env.requirements = os.path.join(env.stage['path'], 'dad/requirements.txt')
+        env.requirements_base_path = os.path.join(env.stage['path'], 'dad/')
+        
+    env.requirements['base'] = os.path.join(env.requirements_base_path, 'requirements.txt')
+    for stage in STAGES:
+        rp = os.path.join(env.dadconf_path, 'requirements_%s.txt' % stage)
+        if os.path.exists(rp):
+            env.requirements[stage] = rp
 
     if not env.project_name:
         abort("Cannot determine project name.. does dad/project.yml exists ?")
