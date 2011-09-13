@@ -249,6 +249,10 @@ def django_syncdb():
     sys.path.append(env.base_path)
     django.settings_module('%(project_name)s.settings_%(role)s' % env)
     settings = __import__('%(project_name)s.settings_%(role)s' % env)
+    
+    # Not sure what's going on here .. but it fixes a problem..
+    if getattr(settings, 'settings_%(role)s' % env, False):
+        settings = getattr(settings, 'settings_%(role)s' % env, False)
 
     dbconf = settings.DATABASES['default']
 
