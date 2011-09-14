@@ -432,7 +432,7 @@ def move_data(src, dest, data=''):
     filename = '%s_%s_%s.json' % (os.path.join('/tmp/', env.project_name), data, env.role)
     dump_data(data, filename)
 
-    dest_file os.path.join('/tmp/', os.path.basename(filename))
+    dest_file = os.path.join('/tmp/', os.path.basename(filename))
     if not env.is_dev:
         get(os.path.join(env.stage['path'], tpl), dest_file)
 
