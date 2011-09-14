@@ -38,13 +38,13 @@ parser.add_option('-i', '--install',    dest='install', action='store_true')
 parser.add_option('-s', '--syncdb',     dest='syncdb', action='store_true')
 parser.add_option('-S', '--save-state', type="string", dest='save_state', action='store')
 parser.add_option('-m', '--manage',     type="string", dest='manage', action='store')
+parser.add_option('-M', '--move-data',  dest='move_data', action='store')
 parser.add_option('-p', '--push',       type="string", dest='push', action='store')
 parser.add_option('-r', '--rollback',   type="string", dest='rollback', action='store')
 parser.add_option('-t', '--create-local-templates', dest='create_local_templates', action='store_true')
 parser.add_option('-u', '--update',     type="string", dest='update', action='store')
 #parser.add_option('-q', '--quiet',      dest='quiet', action='store_true')
 #parser.add_option('-K', '--ssh-keyless-auth', dest='ssh_keyless_auth', action='store_true')
-#parser.add_option('-m', '--move-data',  dest='move_data', action='store_true')
 
 def main():
 
@@ -103,19 +103,26 @@ def main():
             stage = options.rollback or 'demo'
             project = Project()
             project.rollback(stage)
+        
+        if options.move_data:
+            data = options.move_data or 'demo'
+            if len(args) == 2:
+                src  = args[0]
+                dest = args[1]
+            elif len(args) == 1:
+                src  = 'dev'
+                dest = args[0]
+                print (src, dest)
+            else:
+                print >> sys.stderr, "\nMove data requires a module.model, a destination and optionally a source (defaults to dev) as arguments"
+                sys.exit(1)
+            project = Project()
+            project.move_data(data, dest, src)
 
        #if options.ssh_keyless_auth:
        #    stage = len(args) and args[0] or 'demo'
        #    project = Project()
        #    project.ssh_keyless_auth(stage)
-        
-       #if options.move_data:
-       #    stage = len(args) and args[0] or 'demo'
-       #    if len(args) != 2:
-       #        print >> sys.stderr, "\nMove data requires two stages names, ex: dad-admin.py -m dev demo."
-       #        sys.exit(1)
-       #    project = Project()
-       #    project.move_data(args[0], args[1])
 
 
     except SystemExit:

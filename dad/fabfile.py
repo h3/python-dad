@@ -424,12 +424,31 @@ def manage(role, **kwargs):
         print do(env.venv_activate +' && %s manage.py %s' % (env.venv_python, kwargs['arguments']))
 
 
+def move_data(src, dest, data=''):
+    """ 
+    move database data with dumpdata & loaddata
+    """
+    _setup_env()
+    filename = '%s_%s_%s.json' % (os.path.join('/tmp/', env.project_name), data, env.role)
+    dump_data(data, filename)
 
-def dump_data(filename):
+    dest_file os.path.join('/tmp/', os.path.basename(filename))
+    if not env.is_dev:
+        get(os.path.join(env.stage['path'], tpl), dest_file)
+
+        upload_file(dest_file, dest)
+        # 'file': fn, 'src': src, 'dest': dest }, roles='', hosts='', user=False, run=False))
+
+   #load_data(fn) 
+        # 'file': fn, 'dest': dest}, roles='', hosts='', user=False, run=False))
+
+
+def dump_data(data='', filename=False):
     """ 
     dumps database data with dumpdata
     """
-    _setup_env()
+    # TODO: use concurrency safe temp file
+    print "DUMPING: %s to %s" % (data, filename)
     if env.is_dev:
         path = env.base_path
         do = local
@@ -437,11 +456,11 @@ def dump_data(filename):
         path = env.stage['path']
         do = sudo
 
-    do('cd %s && %s && python manage.py dumpdata --settings=settings_%s > %s ' % (
-        os.path.join(path, env.project_name), env.venv_activate, env.role, filename))
+    do('cd %s && %s && python manage.py dumpdata %s --settings=settings_%s > %s ' % (
+        os.path.join(path, env.project_name), env.venv_activate, data, env.role, filename))
 
-    if env.is_dev:
-        do('cd %s' % path)
+   #if env.is_dev:
+   #    do('cd %s' % path)
 
 
 def load_data(filename):

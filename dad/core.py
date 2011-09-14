@@ -84,22 +84,29 @@ class Project():
         self._fab('rollback -R %s' % to)
    
 
-    def move_data(self, src='dev', dest='demo'):
+    def move_data(self, data, dest, src='dev'):
         """
         Move database data from one stage to another
         """
-        fn = '/tmp/%s.json' % env.project_name
-        cmd = []
-        cmd.append(self._fab('dump_data:%(file)s -R %(src)s' % { 
-            'file': fn, 'src': src }, roles='', hosts='', user=False, run=False))
+        if not console.confirm("Are you sure you want to move %s data to %s using the %s database ?" % (data, dest, src), False):
+            print >> sys.stderr, "\nNothing changed."
+            sys.exit(1)
+        
+        self._fab('move_data:%(src)s,%(dest)s,%(data)s -R %(src)s' % {'src': src, 'dest': dest, 'data': data}, roles='', hosts='', user=False)
 
-        cmd.append(self._fab('upload_file:%(file)s,%(dest)s -R %(src)s' % { 
-            'file': fn, 'src': src, 'dest': dest }, roles='', hosts='', user=False, run=False))
 
-        cmd.append(self._fab('load_data:%(file)s -R %(dest)s' % { 
-            'file': fn, 'dest': dest}, roles='', hosts='', user=False, run=False))
 
-        os.system(' && '.join(cmd))
+       #cmd = []
+       #cmd.append(self._fab('dump_data:%(data)s -R %(src)s' % { 
+       #    'file': fn, 'src': src, 'data': data }, roles='', hosts='', user=False, run=False))
+
+       #cmd.append(self._fab('upload_file:%(file)s,%(dest)s -R %(src)s' % { 
+       #    'file': fn, 'src': src, 'dest': dest }, roles='', hosts='', user=False, run=False))
+
+       #cmd.append(self._fab('load_data:%(file)s -R %(dest)s' % { 
+       #    'file': fn, 'dest': dest}, roles='', hosts='', user=False, run=False))
+
+       #os.system(' && '.join(cmd))
     
     
     def _fab(self, tasks, roles='', hosts='', user=False, run=True):
