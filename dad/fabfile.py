@@ -21,11 +21,9 @@ RSYNC_EXCLUDE = (
     'Thumbs.db',
     '.svn',
     'media/admin',
-#   'media/attachments',
-#   'media/uploads',
-    'local_settings.py',
-    'fabfile.py',
-    'bootstrap.py',
+    'media/cache',
+    'media/uploads',
+    'settings_dev.py',
 )
 
 output['debug'] = True
@@ -142,7 +140,9 @@ def install(project_name):
         # requirements.txt
         local('cp %s %s' % (_get_template('requirements.txt'), env.dadconf_path))
         for stage in STAGES:
-            local('cp %s %s' % (_get_template('requirements_%s.txt' % stage), env.dadconf_path))
+            req = _get_template('requirements_%s.txt' % stage)
+            if files.exists(req):
+                local('cp %s %s' % (req, env.dadconf_path))
 
         _template(_get_template('project.yml'), os.path.join(env.dadconf_path, 'project.yml'), {
             'project_name': project_name,
@@ -203,6 +203,50 @@ def rollback():
 
     configure_site()
 
+
+def push_uploads(dest):
+    _setup_env()
+    require('venv_root', provided_by=('demo', 'prod'))
+    extra_opts = ['--omit-dir-times']
+
+    if env.is_dev:
+        use_sudo = False
+        do = run
+    else:
+        use_sudo = True
+        do = sudo
+
+    if env.role == 'prod':
+        if not console.confirm('Are you sure you want to move %s uploads from %s to production?' % (env.project_name, env.role), default=False):
+            abort('Production deployment aborted.')
+
+    src_path = os.path.join(env.base_path.endswith('/') and env.base_path or '%s/' % env.base_path, env.project_name, 'media/uploads/')
+    dest_path = os.path.join(env.stage['path'], env.project_name, 'media/')
+
+    # Set permission so we can upload
+
+    sudo('chown -R %s %s' % (env.user, env.stage['path']))
+
+    do('chmod 777 -R %s' % dest_path)
+
+    if not files.exists(os.path.join(dest_path, 'uploads')):
+        do('mkdir -p %s' % os.path.join(dest_path, 'uploads'))
+    
+    do('chown -R %s %s' % (env.user, os.path.join(dest_path)))
+
+    if console.confirm('Delete out of sync files ? (WARNING: permanent !)', default=False):
+        delete = True
+    else:
+        delete = False
+
+    rsync_project(os.path.join(dest_path, 'uploads'),
+        local_dir   = src_path,
+        exclude     = ('.DS_Store', '.hg', '*.pyc', '*.example', 'Thumbs.db', '.svn',),
+        delete      = delete,
+        extra_opts  = " ".join(extra_opts),
+    )
+    do('chown -R %s %s' % (env.user, os.path.join(dest_path)))
+    do('chmod 777 -R %s' % os.path.join(dest_path))
 
 
 def push():
@@ -526,10 +570,10 @@ def _setup_env():
         env.requirements_base_path = os.path.join(env.stage['path'], 'dad/')
         
     env.requirements['base'] = os.path.join(env.requirements_base_path, 'requirements.txt')
-    for stage in STAGES:
-        rp = os.path.join(env.dadconf_path, 'requirements_%s.txt' % stage)
-        if os.path.exists(rp):
-            env.requirements[stage] = rp
+   #for stage in STAGES:
+   #    rp = os.path.join(env.dadconf_path, 'requirements_%s.txt' % stage)
+   #    if os.path.exists(rp):
+   #        env.requirements[stage] = rp
 
     if not env.project_name:
         abort("Cannot determine project name.. does dad/project.yml exists ?")
@@ -545,6 +589,7 @@ def _setup_env():
     if 'no_site_packages' in env.stage and env.stage['no_site_packages'] == 'false':
         env.venv_no_site_packages = ''
     else:
+        print "USING: --no-site-packages"
         env.venv_no_site_packages = '--no-site-packages'
 
     if 'setuptools' in env.stage and env.stage['setuptools'] == 'true':

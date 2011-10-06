@@ -40,6 +40,7 @@ parser.add_option('-S', '--save-state', type="string", dest='save_state', action
 parser.add_option('-m', '--manage',     type="string", dest='manage', action='store')
 parser.add_option('-M', '--move-data',  dest='move_data', action='store')
 parser.add_option('-p', '--push',       type="string", dest='push', action='store')
+parser.add_option('-P', '--push-uploads', type="string", dest='push_uploads', action='store')
 parser.add_option('-r', '--rollback',   type="string", dest='rollback', action='store')
 parser.add_option('-t', '--create-local-templates', dest='create_local_templates', action='store_true')
 parser.add_option('-u', '--update',     type="string", dest='update', action='store')
@@ -87,6 +88,11 @@ def main():
             stage = options.push or 'demo'
             project = Project()
             project.push(stage)
+
+        if options.push_uploads:
+            stage = options.push or 'demo'
+            project = Project()
+            project.push_uploads(stage)
         
         if options.apache:
             stage = options.apache or 'demo'
