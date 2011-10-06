@@ -100,6 +100,13 @@ class Project():
             'file': fn, 'dest': dest}, roles='', hosts='', user=False, run=False))
 
         os.system(' && '.join(cmd))
+   
+
+    def push_uploads(self, src='dev', dest='demo'):
+        """
+        Push uploads data from one stage to another
+        """
+        self._fab('push_uploads:%(dest)s -R %(src)s' % {'dest': dest, 'src': src})
     
     
     def _fab(self, tasks, roles='', hosts='', user=False, run=True):
