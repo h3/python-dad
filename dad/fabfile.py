@@ -139,10 +139,10 @@ def install(project_name):
         local('mkdir %s' % env.dadconf_path)
         # requirements.txt
         local('cp %s %s' % (_get_template('requirements.txt'), env.dadconf_path))
-        for stage in STAGES:
-            req = _get_template('requirements_%s.txt' % stage)
-            if files.exists(req):
-                local('cp %s %s' % (req, env.dadconf_path))
+       #for stage in STAGES:
+       #    req = _get_template('requirements_%s.txt' % stage)
+       #    if files.exists(req):
+       #        local('cp %s %s' % (req, env.dadconf_path))
 
         _template(_get_template('project.yml'), os.path.join(env.dadconf_path, 'project.yml'), {
             'project_name': project_name,
