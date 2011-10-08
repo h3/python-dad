@@ -657,8 +657,8 @@ def _create_dev_bootstrap(env_path, env_name):
     virtualenv activate
     """
     _template(_get_template('dev.sh'), os.path.join(env.dadconf_path, 'dev.sh'), {
-        'env_path': env.venv_path,
-        'activate_path': env.venv_activate,
+        'env_path':      env.venv_path.replace(os.path.expanduser('~/'), '~/'),
+        'activate_path': env.venv_activate.replace(os.path.expanduser('~/'), '~/'),
         'project_name': env.project_name,
     })
 
