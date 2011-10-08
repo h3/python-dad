@@ -1,4 +1,6 @@
 #!/bin/bash
+export WORKON_HOME=%(env_path)s
+%(activate_path)s
 
 # colors
 PS1="\e[0;36m(`basename \"$VIRTUAL_ENV\"`)\e[0m $_OLD_VIRTUAL_PS1"
@@ -29,6 +31,4 @@ alias gb='git branch '
 alias gm='git merge '
 alias gt='git status'
 
-export WORKON_HOME=%(env_path)s
-%(activate_path)s
 cd %(project_name)s
