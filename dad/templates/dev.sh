@@ -3,7 +3,7 @@ export WORKON_HOME=%(env_path)s
 %(activate_path)s
 
 # colors
-PS1="\e[0;36m(`basename \"$VIRTUAL_ENV\"`)\e[0m $_OLD_VIRTUAL_PS1"
+PS1="\[\e[0;36m\](`basename \"$VIRTUAL_ENV\"`)\[\e[0m\] $_OLD_VIRTUAL_PS1"
 
 # set a fancy prompt (non-color, unless we know we "want" color)
 case "$TERM" in
