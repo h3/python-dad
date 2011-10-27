@@ -52,6 +52,35 @@ That's it !
 For more detailed information about installing and using python-dad please read the Getting Started Guide
 
 
+Notes
+=====
+
+Two packages can be problematic to use with PIP, at least with Ubuntu.
+
+
+PIL
+^^^
+
+When using PIL with Ubuntu 64bit you might get a jpeg encoder error. To fix it, simply do this::
+
+    sudo ln -s /usr/lib/x86_64-linux-gnu/libfreetype.so /usr/lib/
+    sudo ln -s /usr/lib/x86_64-linux-gnu/libz.so /usr/lib/
+    sudo ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so /usr/lib/
+
+
+For more infos about this bug: http://ubuntuforums.org/showthread.php?t=1751455
+
+
+MySQL-python
+^^^^^^^^^^^^
+
+I also had some problem with MySQL-python, which sometimes work and sometimes doesn't work.
+I haven't figured out why exactly, but using a tarball solves the problem. So instead of using
+MySQL-python in your requirements.txt, use a direct tarball link like this:
+
+http://downloads.sourceforge.net/project/mysql-python/mysql-python/1.2.2/MySQL-python-1.2.2.tar.gz
+
+
 Credits
 =======
 
