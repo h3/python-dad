@@ -83,6 +83,7 @@ def update_requirements():
             if stage in env.requirements:
                 cmd =  ['pip install']
                 cmd += ['-E %(venv_path)s' % env]
+                cmd += ['%(venv_pypi_mirror)s' % env]
                 cmd += ['--requirement %s' % env.requirements[stage]]
 
                 do = sudo
@@ -397,7 +398,7 @@ def django_collect_static():
         path = env.stage['path']
         do = sudo
     with(cd(os.path.join(path, env.project_name))):
-        sudo(env.venv_activate +' && python manage.py collectstatic --link --noinput')
+        sudo(env.venv_activate +' && python manage.py collectstatic --link --noinput --settings=settings_%(role)s' % env)
 
 def apache_graceful():
     """ 
@@ -589,8 +590,12 @@ def _setup_env():
     if 'no_site_packages' in env.stage and env.stage['no_site_packages'] == 'false':
         env.venv_no_site_packages = ''
     else:
-        print "USING: --no-site-packages"
         env.venv_no_site_packages = '--no-site-packages'
+
+    if 'pypi_mirror' in env.stage:
+        env.venv_pypi_mirror = '-i %s' % env.stage['pypi_mirror']
+    else:
+        env.venv_pypi_mirror = ''
 
     if 'setuptools' in env.stage and env.stage['setuptools'] == 'true':
         env.venv_distribute = ''
@@ -641,7 +646,7 @@ def _create_mysqldb(dbconf):
             cmd.append('--password=%s' % dbconf['PASSWORD'])
         if 'HOST' in dbconf:
             cmd.append('-h %s' % dbconf['HOST'])
-        cmd.append("-e 'CREATE DATABASE IF NOT EXISTS %s;'" % dbconf['NAME'])
+        #cmd.append("-e 'CREATE DATABASE IF NOT EXISTS %s;'" % dbconf['NAME'])
 
         if env.role == 'dev':
             local(" ".join(cmd))
