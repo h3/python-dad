@@ -107,6 +107,12 @@ class Project():
        #    'file': fn, 'dest': dest}, roles='', hosts='', user=False, run=False))
 
        #os.system(' && '.join(cmd))
+
+    def fetch_uploads(self, target='demo'):
+        """
+        Fetch uploads data from a stage to dev
+        """
+        self._fab('fetch_uploads -R %(target)s' % {'target': target})
    
 
     def push_uploads(self, src='dev', dest='demo'):

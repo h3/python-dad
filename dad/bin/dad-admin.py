@@ -34,6 +34,7 @@ parser.add_option('-a', '--apache',     type="string", dest='apache', action='st
 parser.add_option('-c', '--clear',      type="string", dest='clear', action='store')
 parser.add_option('-d', '--dev',        dest='dev', action='store_true')
 parser.add_option('-f', '--freeze',     type="string", dest='freeze', action='store')
+parser.add_option('-F', '--fetch-uploads', type="string", dest='fetch_uploads', action='store')
 parser.add_option('-i', '--install',    dest='install', action='store_true')
 parser.add_option('-s', '--syncdb',     dest='syncdb', action='store_true')
 parser.add_option('-S', '--save-state', type="string", dest='save_state', action='store')
@@ -90,9 +91,14 @@ def main():
             project.push(stage)
 
         if options.push_uploads:
-            stage = options.push or 'demo'
+            stage = options.push_uploads or 'demo'
             project = Project()
             project.push_uploads(stage)
+
+        if options.fetch_uploads:
+            stage = options.fetch_uploads or 'demo'
+            project = Project()
+            project.fetch_uploads(stage)
         
         if options.apache:
             stage = options.apache or 'demo'

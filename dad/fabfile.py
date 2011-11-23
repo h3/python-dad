@@ -20,6 +20,7 @@ RSYNC_EXCLUDE = (
     '*.example',
     'Thumbs.db',
     '.svn',
+    '.sass-cache',
     'media/admin',
     'media/cache',
     'media/uploads',
@@ -42,6 +43,14 @@ env.conf            = get_config(env.dadconf_path)
 if env.conf:
     for role in env.conf['roles']:
         env.roledefs[role['name']] = role['hosts']
+
+
+def _get_local_project_path():
+    p = os.path.join(env.base_path, env.project_name)
+    if os.path.exists(p):
+        return p
+    else:
+        return env.base_path
 
 
 def clear_virtualenv():
@@ -248,6 +257,18 @@ def push_uploads(dest):
     )
     do('chown -R %s %s' % (env.user, os.path.join(dest_path)))
     do('chmod 777 -R %s' % os.path.join(dest_path))
+
+
+def fetch_uploads():
+    _setup_env()
+    require('venv_root', provided_by=('demo', 'prod'))
+    
+    if env.is_dev:
+        print "This command works only for remote stages (ex: not dev)"
+        sys.exit()
+
+    with(cd(os.path.join(env.stage['path'], env.project_name))):
+        get('media/', _get_local_project_path())
 
 
 def push():
