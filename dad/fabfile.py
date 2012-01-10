@@ -341,10 +341,10 @@ def django_syncdb():
 
     dbconf = settings.DATABASES['default']
 
-    if dbconf['ENGINE'].endswith('mysql'):
-        _create_mysqldb(dbconf)
+   #if dbconf['ENGINE'].endswith('mysql'):
+   #    _create_mysqldb(dbconf)
     # Give apache write permission to the project directory
-    elif dbconf['ENGINE'].endswith('sqlite3') and env.role != 'dev':
+    if dbconf['ENGINE'].endswith('sqlite3') and env.role != 'dev':
         user = 'user' in env.stage and env.stage['user'] or 'www-data'
         sudo('chown -R %s %s' % (user, os.path.dirname(dbconf['NAME'])))
         sudo('chmod 777 %s' % dbconf['NAME'])
