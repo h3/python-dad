@@ -86,6 +86,8 @@ Credits
 
 This project was created and is sponsored by:
 
-.. |MotionMedia| image:: http://motion-m.ca/media/img/logo.png
-.. _MotionMedia: http://motion-m.ca/
+.. figure:: http://motion-m.ca/media/img/logo.png
+    :figwidth: image
+
+MotionMedia (http://motion-m.ca/)
 
