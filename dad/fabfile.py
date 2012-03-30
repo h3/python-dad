@@ -30,14 +30,23 @@ RSYNC_EXCLUDE = (
 output['debug'] = True
 
 env.base_path = os.getcwd()
-if os.path.exists(os.path.join(env.base_path, 'manage.py')):
-    env.base_path = os.path.abspath(os.path.join(env.base_path, '../'))
+#if not os.path.exists(os.path.join(env.base_path, 'manage.py')):
+#    env.base_path = os.path.abspath(os.path.join(env.base_path, '../'))
+
+
+
+cwd = env.base_path
+
+if os.path.exists(os.path.join(cwd, 'dad/project.yml')):
+    dad_path = os.path.join(cwd, 'dad/')
+else:
+    dad_path = os.path.join(env.base_path, 'dad/')
 
 env.dadconf_path    = os.path.join(env.base_path, 'dad/')
 env.apacheconf_path = os.path.join(env.base_path, 'apache/')
-env.dad_path        = os.path.dirname(__file__)
+env.dad_path        = dad_path
 env.tpl_path        = os.path.join(env.dad_path, 'templates/')
-env.conf            = get_config(env.dadconf_path)
+env.conf            = get_config(dad_path)
 
 
 if env.conf:
@@ -72,12 +81,11 @@ def freeze_requirements():
     _setup_env()
     require('requirements', provided_by=STAGES)
     with cd(env.venv_path):
-        if console.confirm("Are you sure you want to overrite %(requirements)s ?" % env, default=True):
-            cmd = env.venv_activate +' && pip -E %(venv_path)s freeze > %(requirements)s' % env
-            if env.is_dev:
-                local(cmd)
-            else:
-                sudo(cmd)
+        cmd = env.venv_activate +' && pip -E %(venv_path)s freeze --no-site-packages' % env
+        if env.is_dev:
+            local(cmd)
+        else:
+            sudo(cmd)
 
 
 def update_requirements():
@@ -406,6 +414,12 @@ def django_symlink_media():
         if not files.exists(os.path.join(env.stage['path'], 'media/'), use_sudo=True):
             sudo('ln -sf %s %s' % (path, env.stage['path']))
 
+def _get_base_path(path, env):
+    # Django < 1.4
+    if os.path.exists(os.path.join(path, env.project_name, 'manage.py')):
+        return os.path.join(path, env.project_name)
+    return path
+
 
 def django_collect_static():
     """ 
@@ -418,7 +432,7 @@ def django_collect_static():
     else:
         path = env.stage['path']
         do = sudo
-    with(cd(os.path.join(path, env.project_name))):
+    with(cd(os.path.join(env.stage['path'], env.project_name))):
         sudo(env.venv_activate +' && python manage.py collectstatic --link --noinput --settings=settings_%(role)s' % env)
 
 def apache_graceful():
